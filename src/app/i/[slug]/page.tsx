@@ -84,8 +84,10 @@ export default async function InvitePage({
   const names = displayNames(invite, locale);
   const { start } = eventInstant(invite.event_date, invite.event_time);
   const toQuery = guestName ? `&to=${encodeURIComponent(guestName)}` : "";
-  // Absolute, un-personalized invite URL for forwarding via WhatsApp.
-  const shareBase = process.env.APP_BASE_URL ?? "";
+  // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
+  // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
+  // relative.
+  const shareBase = process.env.APP_BASE_URL ?? "http://localhost:3000";
   const shareUrl = whatsappShareUrl(tr("create.share_text"), `${shareBase}/i/${slug}`);
 
   const paletteStyle = {
