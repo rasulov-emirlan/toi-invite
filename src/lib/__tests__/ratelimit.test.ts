@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TokenBucketLimiter, clientKey } from "../ratelimit";
+import { TokenBucketLimiter, clientIp, clientKey } from "../ratelimit";
 
 describe("TokenBucketLimiter", () => {
   it("allows up to capacity, then blocks", () => {
@@ -95,5 +95,20 @@ describe("clientKey", () => {
   it("falls back to a single 'unknown' key when no IP headers are present", () => {
     const req = new Request("http://x/");
     expect(clientKey(req, "invite")).toBe("invite:unknown");
+  });
+});
+
+describe("clientIp (bare IP for composing per-invite keys)", () => {
+  it("returns the real IP, ignoring the spoofable XFF prefix", () => {
+    const req = new Request("http://x/", {
+      headers: { "x-forwarded-for": "6.6.6.6, 203.0.113.7" },
+    });
+    expect(clientIp(req)).toBe("203.0.113.7");
+    // composes into a per-invite key
+    expect(`rsvp:abcd2345:${clientIp(req)}`).toBe("rsvp:abcd2345:203.0.113.7");
+  });
+
+  it("returns 'unknown' when no IP headers are present", () => {
+    expect(clientIp(new Request("http://x/"))).toBe("unknown");
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { translator } from "@/lib/i18n";
 import type { Attendance, Locale } from "@/lib/types";
 
@@ -17,11 +17,19 @@ export default function RsvpForm({
   const [guests, setGuests] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownSec, setCooldownSec] = useState(0);
   const [done, setDone] = useState<Attendance | null>(null);
+
+  // Tick down the rate-limit cooldown (keeps the button disabled meanwhile).
+  useEffect(() => {
+    if (cooldownSec <= 0) return;
+    const id = setTimeout(() => setCooldownSec((s) => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cooldownSec]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!attendance) return;
+    if (!attendance || cooldownSec > 0) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -35,6 +43,14 @@ export default function RsvpForm({
           guests_count: attendance === "yes" ? guests : 1,
         }),
       });
+      if (res.status === 429) {
+        const raw = Number(res.headers.get("Retry-After"));
+        const sec = Number.isFinite(raw) && raw > 0 ? Math.min(raw, 120) : 10;
+        setCooldownSec(sec);
+        setError(tr("invite.rsvp_rate_limited").replace("{n}", String(sec)));
+        setSubmitting(false);
+        return;
+      }
       if (!res.ok) {
         setError(tr("invite.rsvp_error"));
         setSubmitting(false);
@@ -115,9 +131,15 @@ export default function RsvpForm({
         <button
           type="submit"
           className="btn-ac btn-ac--solid"
-          disabled={submitting || !attendance || name.trim().length === 0}
+          disabled={
+            submitting || cooldownSec > 0 || !attendance || name.trim().length === 0
+          }
         >
-          {submitting ? tr("invite.rsvp_submitting") : tr("invite.rsvp_submit")}
+          {cooldownSec > 0
+            ? `${tr("invite.rsvp_submit")} (${cooldownSec})`
+            : submitting
+              ? tr("invite.rsvp_submitting")
+              : tr("invite.rsvp_submit")}
         </button>
       </form>
     </div>
