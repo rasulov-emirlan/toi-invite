@@ -65,28 +65,41 @@ export class TokenBucketLimiter {
 }
 
 /**
- * Derive a limiter key from the request's real client IP.
+ * Resolve the request's real client IP.
  *
  * Behind a single trusted proxy (Traefik), the CLIENT-supplied prefix of
  * `x-forwarded-for` is spoofable — a flooder could rotate it to mint fresh
  * buckets. The trustworthy signals are `x-real-ip` (which Traefik sets to the
  * real peer) and, failing that, the LAST `x-forwarded-for` hop (the one the
- * trusted proxy appended). We never trust the first hop.
+ * trusted proxy appended). We never trust the first hop. Returns "unknown" when
+ * no IP header is present (all such requests then share one bucket).
  */
+export function clientIp(req: Request): string {
+  const real = req.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const hops = (req.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean);
+  return hops.length > 0 ? hops[hops.length - 1] : "unknown";
+}
+
+/** `${prefix}:${clientIp}` — a per-IP limiter key. */
 export function clientKey(req: Request, prefix: string): string {
-  let ip = req.headers.get("x-real-ip")?.trim() ?? "";
-  if (!ip) {
-    const hops = (req.headers.get("x-forwarded-for") ?? "")
-      .split(",")
-      .map((h) => h.trim())
-      .filter(Boolean);
-    ip = hops.length > 0 ? hops[hops.length - 1] : "";
-  }
-  return `${prefix}:${ip || "unknown"}`;
+  return `${prefix}:${clientIp(req)}`;
 }
 
 // Shared instances (process-global for the container's lifetime).
-// RSVP: 20-burst, ~1 refill / 3s — generous for a real family answering, brutal
-// for a flooder. Invite creation: 10-burst, ~1 / 30s — guards the DB volume.
-export const rsvpLimiter = new TokenBucketLimiter(20, 1 / 3);
-export const inviteLimiter = new TokenBucketLimiter(10, 1 / 30);
+//
+// RSVP is two-tier so that CGNAT (many KG mobile guests behind one carrier IP)
+// doesn't let one busy invite throttle another's guests:
+//   - coarse per-IP guard, checked BEFORE body parse — sheds pure floods and
+//     malformed spam cheaply. Generous so a whole carrier's legit traffic fits.
+//   - fine per-(invite, IP) guard, checked AFTER the slug is validated — the real
+//     anti-headcount-corruption limit, scoped to one invite.
+export const rsvpIpLimiter = new TokenBucketLimiter(60, 2); // 60 burst, 2/s per IP
+export const rsvpInviteLimiter = new TokenBucketLimiter(20, 1 / 3); // 20 burst, 1/3s per (slug,ip)
+
+// Invite creation: per-IP, 20 burst / ~1 per 30s — CGNAT-friendly for organizers
+// while still bounding DB-volume growth.
+export const inviteLimiter = new TokenBucketLimiter(20, 1 / 30);

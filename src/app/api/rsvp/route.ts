@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { validateRsvp } from "@/lib/validation";
 import { isValidSlug } from "@/lib/slug";
 import { addRsvp } from "@/lib/db";
-import { clientKey, rsvpLimiter } from "@/lib/ratelimit";
+import { clientIp, rsvpInviteLimiter, rsvpIpLimiter } from "@/lib/ratelimit";
 import type { RsvpInput } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -12,14 +12,20 @@ interface Body extends RsvpInput {
   slug?: string;
 }
 
+function tooMany(retryAfterSec: number) {
+  return NextResponse.json(
+    { error: "rate_limited" },
+    { status: 429, headers: { "Retry-After": String(retryAfterSec) } },
+  );
+}
+
 export async function POST(req: Request) {
-  const rl = rsvpLimiter.check(clientKey(req, "rsvp"), Date.now());
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: "rate_limited" },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
-    );
-  }
+  const now = Date.now();
+  const ip = clientIp(req);
+
+  // Tier 1 — coarse per-IP guard before we parse anything.
+  const coarse = rsvpIpLimiter.check(`rsvpip:${ip}`, now);
+  if (!coarse.allowed) return tooMany(coarse.retryAfterSec);
 
   let body: Body;
   try {
@@ -31,6 +37,11 @@ export async function POST(req: Request) {
   if (!isValidSlug(body.slug)) {
     return NextResponse.json({ error: "bad slug" }, { status: 400 });
   }
+
+  // Tier 2 — fine per-(invite, IP) guard: one invite's traffic can't exhaust
+  // another's on the same shared carrier IP.
+  const fine = rsvpInviteLimiter.check(`rsvp:${body.slug}:${ip}`, now);
+  if (!fine.allowed) return tooMany(fine.retryAfterSec);
 
   const result = validateRsvp(body);
   if (!result.ok) {
