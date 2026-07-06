@@ -52,15 +52,23 @@ describe("TokenBucketLimiter", () => {
     rl.prune(t + 2000); // both idle > 1s
     expect(rl.size()).toBe(0);
   });
+
+  it("hard-caps the map under a distinct-key flood (bounded memory)", () => {
+    // idleTtl huge so idle-prune can't help; only the hard cap bounds it
+    const rl = new TokenBucketLimiter(1, 1, 60 * 60_000, 5); // maxKeys = 5
+    const t = 1_000_000;
+    for (let i = 0; i < 1000; i++) rl.check(`ip-${i}`, t); // all "fresh", none idle
+    expect(rl.size()).toBeLessThanOrEqual(5);
+  });
 });
 
 describe("clientKey", () => {
-  it("prefers x-real-ip (Traefik-set, unspoofable)", () => {
+  it("prefers x-real-ip over the XFF last hop (proves precedence)", () => {
     const req = new Request("http://x/", {
       headers: {
         "x-real-ip": "203.0.113.7",
-        // attacker-supplied first hop must be ignored
-        "x-forwarded-for": "6.6.6.6, 203.0.113.7",
+        // a DIFFERENT last hop — if XFF-last won, the key would end in .9
+        "x-forwarded-for": "6.6.6.6, 198.51.100.9",
       },
     });
     expect(clientKey(req, "rsvp")).toBe("rsvp:203.0.113.7");

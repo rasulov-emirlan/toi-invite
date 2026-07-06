@@ -25,7 +25,15 @@ export class TokenBucketLimiter {
   check(key: string, nowMs: number): RateLimitResult {
     let b = this.buckets.get(key);
     if (!b) {
-      if (this.buckets.size >= this.maxKeys) this.prune(nowMs);
+      // Hard cap: bound the map even under a flood of distinct source IPs (where
+      // idle-based prune frees nothing). Evict oldest-inserted entries — O(1)
+      // each, no O(n) scan on the hot path — until there is room. Evicting a live
+      // bucket just resets it to full capacity, which is fail-open and harmless.
+      while (this.buckets.size >= this.maxKeys) {
+        const oldest = this.buckets.keys().next().value;
+        if (oldest === undefined) break;
+        this.buckets.delete(oldest);
+      }
       b = { tokens: this.capacity, last: nowMs };
       this.buckets.set(key, b);
     } else {
