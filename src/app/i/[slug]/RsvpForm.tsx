@@ -7,12 +7,14 @@ import type { Attendance, Locale } from "@/lib/types";
 export default function RsvpForm({
   slug,
   locale,
+  initialName = "",
 }: {
   slug: string;
   locale: Locale;
+  initialName?: string;
 }) {
   const tr = translator(locale);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [attendance, setAttendance] = useState<Attendance | null>(null);
   const [guests, setGuests] = useState(1);
   const [submitting, setSubmitting] = useState(false);

@@ -7,6 +7,7 @@ import { displayNames, eventLabel } from "@/lib/invite-view";
 import { formatKgTimestamp } from "@/lib/calendar";
 import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
+import PersonalLinkGenerator from "./PersonalLinkGenerator";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -122,6 +123,8 @@ export default async function RsvpsPage({
             </table>
           </div>
         )}
+
+        <PersonalLinkGenerator slug={slug} locale={locale} />
       </main>
       <footer className="footer">
         <div className="wrap">{tr("landing.footer")}</div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getInvite } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
+import { sanitizeGuestName } from "@/lib/personalize";
 import { isLocale, translator } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
 import { eventInstant, googleCalendarUrl } from "@/lib/calendar";
@@ -68,18 +69,20 @@ export default async function InvitePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; to?: string }>;
 }) {
   const r = await resolve(params, searchParams);
   if (!r) {
     return <NotFound />;
   }
   const { invite, locale, slug } = r;
+  const guestName = sanitizeGuestName((await searchParams).to);
   const tr = translator(locale);
   const tpl = getTemplate(invite.template);
   const other: Locale = locale === "ru" ? "ky" : "ru";
   const names = displayNames(invite, locale);
   const { start } = eventInstant(invite.event_date, invite.event_time);
+  const toQuery = guestName ? `&to=${encodeURIComponent(guestName)}` : "";
 
   const paletteStyle = {
     ["--ac" as string]: tpl.palette.accent,
@@ -97,7 +100,7 @@ export default async function InvitePage({
   return (
     <div className="invite" style={paletteStyle}>
       <div className="invite__lang">
-        <Link href={`/i/${slug}?lang=${other}`}>
+        <Link href={`/i/${slug}?lang=${other}${toQuery}`}>
           {other === "ky" ? "Кыргызча" : "Русский"}
         </Link>
       </div>
@@ -122,6 +125,11 @@ export default async function InvitePage({
           </div>
 
           <div className="invite__body">
+            {guestName && (
+              <p className="invite__salutation">
+                {tr("invite.salutation").replace("{name}", guestName)}
+              </p>
+            )}
             {invite.greeting && (
               <p className="invite__greeting">{invite.greeting}</p>
             )}
@@ -163,7 +171,7 @@ export default async function InvitePage({
               </a>
             </div>
 
-            <RsvpForm slug={slug} locale={locale} />
+            <RsvpForm slug={slug} locale={locale} initialName={guestName} />
           </div>
 
           <div className="invite__foot">
