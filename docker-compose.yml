@@ -1,0 +1,24 @@
+services:
+  toi-invite:
+    build: .
+    container_name: toi-invite
+    restart: unless-stopped
+    environment:
+      - APP_BASE_URL=https://toi.night.enkiduck.com
+      - DB_PATH=/data/toi.db
+    volumes:
+      - toi-data:/data
+    networks: [web]
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.toi-invite.rule=Host(`toi.night.enkiduck.com`)"
+      - traefik.http.routers.toi-invite.entrypoints=websecure
+      - traefik.http.routers.toi-invite.tls.certresolver=le
+      - traefik.http.services.toi-invite.loadbalancer.server.port=3000
+
+networks:
+  web:
+    external: true
+
+volumes:
+  toi-data:
