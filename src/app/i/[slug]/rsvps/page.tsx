@@ -91,6 +91,17 @@ export default async function RsvpsPage({
           </div>
         </div>
 
+        {rows.length > 0 && (
+          <p style={{ margin: "0 0 1rem" }}>
+            <a
+              className="btn btn--ghost"
+              href={`/api/export/${slug}?token=${encodeURIComponent(token as string)}`}
+            >
+              {tr("rsvps.download_csv")} ↓
+            </a>
+          </p>
+        )}
+
         {rows.length === 0 ? (
           <p style={{ color: "var(--gray-500)" }}>{tr("rsvps.empty")}</p>
         ) : (
