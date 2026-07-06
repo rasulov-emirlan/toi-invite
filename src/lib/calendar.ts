@@ -15,6 +15,22 @@ export function toIcsUtc(d: Date): string {
   );
 }
 
+/**
+ * Format a SQLite UTC timestamp ("YYYY-MM-DD HH:MM:SS", as `datetime('now')`
+ * returns) as KG-local wall-clock "YYYY-MM-DD HH:MM".
+ */
+export function formatKgTimestamp(sqliteUtc: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(sqliteUtc);
+  if (!m) return sqliteUtc;
+  const dt = new Date(
+    Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + KG_UTC_OFFSET_HOURS, +m[5]),
+  );
+  return (
+    `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}` +
+    ` ${pad(dt.getUTCHours())}:${pad(dt.getUTCMinutes())}`
+  );
+}
+
 /** Convert a KG-local date+time into start/end Date objects (UTC-correct). */
 export function eventInstant(
   date: string,
@@ -49,7 +65,11 @@ export function googleCalendarUrl(ev: CalendarEvent): string {
 }
 
 function icsEscape(v: string): string {
-  return v.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  return v
+    .replace(/\\/g, "\\\\")
+    .replace(/\r\n|\r|\n/g, "\\n") // normalise all newline forms (incl. lone CR)
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,");
 }
 
 export function icsContent(ev: CalendarEvent, uid: string): string {

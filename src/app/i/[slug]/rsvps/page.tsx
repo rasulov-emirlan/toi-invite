@@ -4,6 +4,8 @@ import { isValidSlug } from "@/lib/slug";
 import { translator } from "@/lib/i18n";
 import { computeRsvpStats } from "@/lib/stats";
 import { displayNames, eventLabel } from "@/lib/invite-view";
+import { formatKgTimestamp } from "@/lib/calendar";
+import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +25,10 @@ export default async function RsvpsPage({
   const locale: Locale = invite?.locale ?? "ru";
   const tr = translator(locale);
 
-  // Token gate — constant-ish comparison; wrong or missing token reveals nothing.
-  const authorized =
-    invite != null && typeof token === "string" && token === invite.organizer_token;
+  // Token gate — length-safe constant-time compare; wrong or missing token reveals
+  // nothing. `token` can also arrive as an array (duplicated param); tokensMatch
+  // returns false for any non-string, so the gate holds.
+  const authorized = invite != null && tokensMatch(token, invite.organizer_token);
 
   if (!invite || !authorized) {
     return (
@@ -112,7 +115,7 @@ export default async function RsvpsPage({
                       </span>
                     </td>
                     <td>{row.attendance === "yes" ? row.guests_count : "—"}</td>
-                    <td>{row.created_at.slice(0, 16)}</td>
+                    <td>{formatKgTimestamp(row.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
