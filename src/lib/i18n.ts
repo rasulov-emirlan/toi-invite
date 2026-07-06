@@ -93,6 +93,7 @@ const strings = {
     "invite.rsvp_thanks_no": "Спасибо, что дали знать. Будем скучать!",
     "invite.rsvp_error": "Не удалось отправить. Попробуйте ещё раз.",
     "invite.rsvp_rate_limited": "Слишком много ответов подряд. Подождите {n} с и попробуйте снова.",
+    "invite.salutation": "Рады видеть вас, {name}!",
     "invite.not_found": "Приглашение не найдено",
     "invite.not_found_body": "Возможно, ссылка неверна или приглашение удалено.",
     "invite.locale_name_ru": "Русский",
@@ -117,6 +118,11 @@ const strings = {
     "rsvps.empty": "Пока никто не ответил. Поделитесь ссылкой с гостями.",
     "rsvps.forbidden": "Доступ закрыт. Нужна ссылка с правильным токеном.",
     "rsvps.back_to_invite": "← К приглашению",
+    "rsvps.personal_kicker": "ИМЕННЫЕ ССЫЛКИ",
+    "rsvps.personal_title": "Именное приглашение",
+    "rsvps.personal_hint":
+      "Введите имя гостя — получите ссылку с его именем внутри. Отправьте каждому лично в WhatsApp.",
+    "rsvps.personal_name_ph": "Имя гостя",
   },
   ky: {
     "brand.name": "Той-Invite",
@@ -197,6 +203,7 @@ const strings = {
     "invite.rsvp_thanks_no": "Билдиргениңизге рахмат. Сагынабыз!",
     "invite.rsvp_error": "Жөнөтүлбөй калды. Кайра аракет кылыңыз.",
     "invite.rsvp_rate_limited": "Удаама-удаа өтө көп жооп. {n} с күтүп, кайра аракет кылыңыз.",
+    "invite.salutation": "Урматтуу {name}!",
     "invite.not_found": "Чакыруу табылган жок",
     "invite.not_found_body": "Балким шилтеме туура эмес же чакыруу өчүрүлгөн.",
     "invite.locale_name_ru": "Русский",
@@ -221,6 +228,11 @@ const strings = {
     "rsvps.empty": "Азырынча эч ким жооп берген жок. Шилтемени меймандар менен бөлүшүңүз.",
     "rsvps.forbidden": "Кирүү жабык. Туура токени бар шилтеме керек.",
     "rsvps.back_to_invite": "← Чакырууга",
+    "rsvps.personal_kicker": "ЖЕКЕ ШИЛТЕМЕЛЕР",
+    "rsvps.personal_title": "Аты жазылган чакыруу",
+    "rsvps.personal_hint":
+      "Меймандын атын жазыңыз — ичинде аты бар шилтеме аласыз. Ар бирине WhatsApp'та жеке жөнөтүңүз.",
+    "rsvps.personal_name_ph": "Меймандын аты",
   },
 } as const;
 

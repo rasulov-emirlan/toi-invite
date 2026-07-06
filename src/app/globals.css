@@ -517,6 +517,15 @@ a {
   padding: 2rem 1.75rem 2.25rem;
 }
 
+.invite__salutation {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.35rem;
+  color: var(--ac);
+  margin: 0 auto 0.75rem;
+}
+
 .invite__greeting {
   font-size: 1.12rem;
   text-align: center;
