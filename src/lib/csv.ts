@@ -2,9 +2,25 @@ import { translator } from "./i18n";
 import { formatKgTimestamp } from "./calendar";
 import type { Locale, RsvpRecord } from "./types";
 
-/** RFC-4180 field escaping: quote when the value contains " , CR or LF. */
+/**
+ * Field escaping. Two layers:
+ *  - Formula-injection guard: a cell whose first char is = + - @ TAB or CR is
+ *    prefixed with a single quote, so Excel/Sheets treat it as text instead of a
+ *    formula (guest names are attacker-controlled via the public RSVP form).
+ *  - RFC-4180 structural quoting: wrap in quotes (doubling internal quotes) when
+ *    the value contains " , CR or LF.
+ */
 function esc(field: string): string {
-  return /[",\r\n]/.test(field) ? `"${field.replace(/"/g, '""')}"` : field;
+  const c0 = field.charCodeAt(0); // NaN for empty string
+  const isFormula =
+    field[0] === "=" ||
+    field[0] === "+" ||
+    field[0] === "-" ||
+    field[0] === "@" ||
+    c0 === 0x09 || // TAB
+    c0 === 0x0d; // CR
+  const guarded = isFormula ? "'" + field : field;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
 }
 
 /**

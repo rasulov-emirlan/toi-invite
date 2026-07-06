@@ -55,4 +55,22 @@ describe("rsvpsToCsv", () => {
     const csv = rsvpsToCsv([row({})], "ru");
     expect(csv).toContain("\r\n");
   });
+
+  it("neutralizes CSV formula injection in a guest name", () => {
+    const csv = rsvpsToCsv(
+      [
+        row({ id: 1, guest_name: "=1+1" }),
+        row({ id: 2, guest_name: "@SUM(A1)" }),
+        row({ id: 3, guest_name: "-5" }),
+        row({ id: 4, guest_name: '=HYPERLINK("http://evil","x")' }),
+      ],
+      "ru",
+    );
+    const lines = csv.slice(1).split("\r\n");
+    expect(lines[1].startsWith("'=1+1,")).toBe(true);
+    expect(lines[2].startsWith("'@SUM(A1),")).toBe(true);
+    expect(lines[3].startsWith("'-5,")).toBe(true);
+    // the =HYPERLINK cell has a comma, so it's guarded AND RFC-quoted
+    expect(lines[4].startsWith('"\'=HYPERLINK(')).toBe(true);
+  });
 });
