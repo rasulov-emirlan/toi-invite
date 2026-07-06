@@ -126,6 +126,7 @@ const strings = {
     "rsvps.personal_hint":
       "Введите имя гостя — получите ссылку с его именем внутри. Отправьте каждому лично в WhatsApp.",
     "rsvps.personal_name_ph": "Имя гостя",
+    "rsvps.download_csv": "Скачать список (CSV)",
   },
   ky: {
     "brand.name": "Той-Invite",
@@ -239,6 +240,7 @@ const strings = {
     "rsvps.personal_hint":
       "Меймандын атын жазыңыз — ичинде аты бар шилтеме аласыз. Ар бирине WhatsApp'та жеке жөнөтүңүз.",
     "rsvps.personal_name_ph": "Меймандын аты",
+    "rsvps.download_csv": "Тизмени жүктөө (CSV)",
   },
 } as const;
 
