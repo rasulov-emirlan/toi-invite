@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { EVENT_TYPES, getEventType } from "@/lib/events";
 import { TEMPLATES } from "@/lib/templates";
 import { translator } from "@/lib/i18n";
+import { whatsappShareUrl } from "@/lib/share";
 import type { EventTypeKey, Locale, TemplateKey } from "@/lib/types";
 
 interface Result {
@@ -296,7 +297,15 @@ function SuccessPanel({
       </div>
 
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <a className="btn" href={`/i/${result.slug}`}>
+        <a
+          className="btn"
+          href={whatsappShareUrl(tr("create.share_text"), publicUrl)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {tr("create.share_whatsapp")}
+        </a>
+        <a className="btn btn--ghost" href={`/i/${result.slug}`}>
           {tr("create.view_invite")} →
         </a>
         <button type="button" className="btn btn--ghost" onClick={onReset}>
