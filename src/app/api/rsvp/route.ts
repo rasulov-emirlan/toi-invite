@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { validateRsvp } from "@/lib/validation";
 import { isValidSlug } from "@/lib/slug";
 import { addRsvp } from "@/lib/db";
+import { clientKey, rsvpLimiter } from "@/lib/ratelimit";
 import type { RsvpInput } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -12,6 +13,14 @@ interface Body extends RsvpInput {
 }
 
 export async function POST(req: Request) {
+  const rl = rsvpLimiter.check(clientKey(req, "rsvp"), Date.now());
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+  }
+
   let body: Body;
   try {
     body = (await req.json()) as Body;
