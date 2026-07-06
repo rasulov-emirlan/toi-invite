@@ -11,11 +11,14 @@ export const MAX_GUEST_NAME = 60;
  */
 export function sanitizeGuestName(raw: unknown): string {
   if (typeof raw !== "string") return "";
-  return raw
+  const cleaned = raw
     .replace(/[^\p{L}\p{M}\p{N} '.\-]/gu, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, MAX_GUEST_NAME);
+    .trim();
+  // Slice by CODE POINT, not UTF-16 unit: a code-unit slice can split an astral
+  // pair and leave a lone surrogate, which makes encodeURIComponent() throw and
+  // 500s the invite page. Array.from iterates by code point.
+  return Array.from(cleaned).slice(0, MAX_GUEST_NAME).join("");
 }
 
 /**

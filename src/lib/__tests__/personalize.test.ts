@@ -30,6 +30,16 @@ describe("sanitizeGuestName", () => {
     const long = "Я".repeat(100);
     expect(sanitizeGuestName(long).length).toBe(MAX_GUEST_NAME);
   });
+
+  it("slices by code point — never leaves a lone surrogate (crash-safe under encodeURIComponent)", () => {
+    // 59 BMP letters + one astral letter (𝐀, U+1D400, category Lu, kept by \p{L}).
+    // A code-unit slice at 60 would split the surrogate pair.
+    const astral = String.fromCodePoint(0x1d400);
+    const out = sanitizeGuestName("A".repeat(59) + astral);
+    expect(() => encodeURIComponent(out)).not.toThrow();
+    // 60 code points kept (astral counts as one)
+    expect(Array.from(out).length).toBe(MAX_GUEST_NAME);
+  });
 });
 
 describe("personalLink", () => {
