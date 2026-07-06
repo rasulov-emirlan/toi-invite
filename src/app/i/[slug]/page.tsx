@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getInvite } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
+import { whatsappShareUrl } from "@/lib/share";
 import { isLocale, translator } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
 import { eventInstant, googleCalendarUrl } from "@/lib/calendar";
@@ -83,6 +84,11 @@ export default async function InvitePage({
   const names = displayNames(invite, locale);
   const { start } = eventInstant(invite.event_date, invite.event_time);
   const toQuery = guestName ? `&to=${encodeURIComponent(guestName)}` : "";
+  // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
+  // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
+  // relative.
+  const shareBase = process.env.APP_BASE_URL ?? "http://localhost:3000";
+  const shareUrl = whatsappShareUrl(tr("create.share_text"), `${shareBase}/i/${slug}`);
 
   const paletteStyle = {
     ["--ac" as string]: tpl.palette.accent,
@@ -175,6 +181,10 @@ export default async function InvitePage({
           </div>
 
           <div className="invite__foot">
+            <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+              {tr("invite.share")}
+            </a>
+            {" · "}
             {names} · <Link href="/">Той·Invite</Link>
           </div>
         </article>
