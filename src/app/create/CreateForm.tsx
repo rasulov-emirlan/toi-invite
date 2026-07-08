@@ -308,6 +308,9 @@ function SuccessPanel({
         <a className="btn btn--ghost" href={`/i/${result.slug}`}>
           {tr("create.view_invite")} →
         </a>
+        <a className="btn btn--ghost" href={`/premium?lang=${locale}`}>
+          {tr("create.premium_cta")}
+        </a>
         <button type="button" className="btn btn--ghost" onClick={onReset}>
           {tr("create.create_another")}
         </button>

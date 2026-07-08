@@ -91,9 +91,19 @@ export default async function Landing({
           <h2>0 сом</h2>
           <div className="pricing">
             <p style={{ margin: 0 }}>{tr("landing.pricing_note")}</p>
-            <div style={{ marginTop: "1.5rem" }}>
+            <div
+              style={{
+                marginTop: "1.5rem",
+                display: "flex",
+                gap: "0.75rem",
+                flexWrap: "wrap",
+              }}
+            >
               <Link href={createHref} className="btn">
                 {tr("landing.cta")} →
+              </Link>
+              <Link href={`/premium?lang=${locale}`} className="btn btn--ghost">
+                {tr("landing.pricing_cta")} ✦
               </Link>
             </div>
           </div>

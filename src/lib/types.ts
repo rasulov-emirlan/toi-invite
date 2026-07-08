@@ -9,6 +9,8 @@ export type EventTypeKey =
 
 export type TemplateKey = "gold" | "emerald" | "rose";
 
+export type PremiumTierKey = "free" | "premium" | "pro";
+
 export type Attendance = "yes" | "no";
 
 export interface InviteRecord {
@@ -54,4 +56,23 @@ export interface RsvpInput {
   guest_name: string;
   attendance: string;
   guests_count: number | string;
+}
+
+/** Shape accepted by the premium-interest endpoint (before validation). */
+export interface PremiumInterestInput {
+  tier: string;
+  name: string;
+  phone: string;
+  locale: string;
+  comment?: string | null;
+}
+
+export interface PremiumInterestRecord {
+  id: number;
+  tier: PremiumTierKey;
+  name: string;
+  phone: string; // normalized +996XXXXXXXXX
+  locale: Locale;
+  comment: string | null;
+  created_at: string;
 }

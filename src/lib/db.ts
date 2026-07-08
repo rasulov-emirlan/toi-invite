@@ -11,6 +11,7 @@ import type {
   TemplateKey,
 } from "./types";
 import type { CleanInvite } from "./validation";
+import type { CleanPremiumInterest } from "./premium";
 import { generateSlug, generateToken } from "./slug";
 
 const DB_PATH = resolve(process.env.DB_PATH ?? "./data/toi.db");
@@ -49,6 +50,15 @@ function db(): Database.Database {
       created_at   TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_rsvps_slug ON rsvps(invite_slug);
+    CREATE TABLE IF NOT EXISTS premium_interest (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      tier       TEXT NOT NULL,
+      name       TEXT NOT NULL,
+      phone      TEXT NOT NULL,
+      locale     TEXT NOT NULL,
+      comment    TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
   _db = handle;
   return _db;
@@ -133,4 +143,21 @@ export function listRsvps(slug: string): RsvpRecord[] {
       "SELECT * FROM rsvps WHERE invite_slug = ? ORDER BY created_at DESC, id DESC",
     )
     .all(slug) as RsvpRecord[];
+}
+
+/** Record a premium-tier interest lead (the payment fake-door). Returns the row id. */
+export function addPremiumInterest(clean: CleanPremiumInterest): number {
+  const info = db()
+    .prepare(
+      `INSERT INTO premium_interest (tier, name, phone, locale, comment)
+       VALUES (@tier, @name, @phone, @locale, @comment)`,
+    )
+    .run({
+      tier: clean.tier,
+      name: clean.name,
+      phone: clean.phone,
+      locale: clean.locale,
+      comment: clean.comment,
+    });
+  return Number(info.lastInsertRowid);
 }
