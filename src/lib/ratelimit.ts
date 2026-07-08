@@ -103,3 +103,7 @@ export const rsvpInviteLimiter = new TokenBucketLimiter(20, 1 / 3); // 20 burst,
 // Invite creation: per-IP, 20 burst / ~1 per 30s — CGNAT-friendly for organizers
 // while still bounding DB-volume growth.
 export const inviteLimiter = new TokenBucketLimiter(20, 1 / 30);
+
+// Premium-interest leads: per-IP, 10 burst / ~1 per 30s — a real prospect submits
+// once or twice; this bounds junk without throttling legitimate interest.
+export const premiumInterestLimiter = new TokenBucketLimiter(10, 1 / 30);

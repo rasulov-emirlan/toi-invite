@@ -127,6 +127,42 @@ const strings = {
       "Введите имя гостя — получите ссылку с его именем внутри. Отправьте каждому лично в WhatsApp.",
     "rsvps.personal_name_ph": "Имя гостя",
     "rsvps.download_csv": "Скачать список (CSV)",
+
+    "landing.pricing_cta": "Смотреть тарифы",
+    "create.premium_cta": "Хочу премиум ✦",
+
+    "premium.kicker": "ПРЕМИУМ",
+    "premium.title": "Премиум для вашего тоя",
+    "premium.subtitle":
+      "Именные приглашения для каждого гостя, премиум-шаблоны и экспорт для тамады. Оставьте заявку — мы напишем в WhatsApp и подскажем, как оплатить.",
+    "premium.price_free": "0 сом",
+    "premium.price_suffix": "сом / той",
+    "premium.free_badge": "Сейчас бесплатно",
+    "premium.popular": "Популярный",
+    "premium.order": "Заказать",
+    "premium.free_cta": "Создать бесплатно",
+    "premium.pay_note":
+      "Оплата — перевод на mbank. Реальная активация после подтверждения заявки. Пока идёт бета, базовое приглашение бесплатно.",
+    "premium.back": "← На главную",
+    "premium.selected_label": "Тариф",
+    "premium.form_kicker": "ЗАЯВКА",
+    "premium.form_title": "Оставьте заявку",
+    "premium.form_name": "Ваше имя",
+    "premium.form_phone": "Телефон (WhatsApp)",
+    "premium.form_phone_hint": "Напишем вам в WhatsApp, чтобы оформить премиум.",
+    "premium.form_comment": "Комментарий (необязательно)",
+    "premium.form_comment_ph": "Какой той, когда, сколько гостей…",
+    "premium.form_submit": "Отправить заявку",
+    "premium.form_submitting": "Отправляем…",
+    "premium.form_cancel": "Отмена",
+    "premium.form_error":
+      "Не удалось отправить. Проверьте телефон и попробуйте ещё раз.",
+    "premium.form_rate_limited":
+      "Слишком много заявок подряд. Подождите {n} с и попробуйте снова.",
+    "premium.success_title": "Заявка принята 🎉",
+    "premium.success_body":
+      "Спасибо! Мы напишем вам в WhatsApp, чтобы оформить премиум. Оплата — перевод на mbank.",
+    "premium.success_again": "Отправить ещё одну заявку",
   },
   ky: {
     "brand.name": "Той-Invite",
@@ -241,6 +277,42 @@ const strings = {
       "Меймандын атын жазыңыз — ичинде аты бар шилтеме аласыз. Ар бирине WhatsApp'та жеке жөнөтүңүз.",
     "rsvps.personal_name_ph": "Меймандын аты",
     "rsvps.download_csv": "Тизмени жүктөө (CSV)",
+
+    "landing.pricing_cta": "Тарифтерди көрүү",
+    "create.premium_cta": "Премиум каалайм ✦",
+
+    "premium.kicker": "ПРЕМИУМ",
+    "premium.title": "Тойуңуз үчүн премиум",
+    "premium.subtitle":
+      "Ар бир мейманга аты жазылган чакыруу, премиум үлгүлөр жана тамада үчүн экспорт. Өтүнүч калтырыңыз — WhatsApp'ка жазып, кантип төлөөнү айтабыз.",
+    "premium.price_free": "0 сом",
+    "premium.price_suffix": "сом / той",
+    "premium.free_badge": "Азыр акысыз",
+    "premium.popular": "Популярдуу",
+    "premium.order": "Буйрутма берүү",
+    "premium.free_cta": "Акысыз түзүү",
+    "premium.pay_note":
+      "Төлөм — mbank которуу. Чыныгы активация өтүнүч тастыкталгандан кийин. Бета учурунда негизги чакыруу акысыз.",
+    "premium.back": "← Башкы бетке",
+    "premium.selected_label": "Тариф",
+    "premium.form_kicker": "ӨТҮНҮЧ",
+    "premium.form_title": "Өтүнүч калтырыңыз",
+    "premium.form_name": "Ысымыңыз",
+    "premium.form_phone": "Телефон (WhatsApp)",
+    "premium.form_phone_hint": "Премиумду тариздөө үчүн WhatsApp'ка жазабыз.",
+    "premium.form_comment": "Комментарий (милдеттүү эмес)",
+    "premium.form_comment_ph": "Кайсы той, качан, канча мейман…",
+    "premium.form_submit": "Өтүнүч жөнөтүү",
+    "premium.form_submitting": "Жөнөтүлүүдө…",
+    "premium.form_cancel": "Жокко чыгаруу",
+    "premium.form_error":
+      "Жөнөтүлбөй калды. Телефонду текшерип, кайра аракет кылыңыз.",
+    "premium.form_rate_limited":
+      "Удаама-удаа өтө көп өтүнүч. {n} с күтүп, кайра аракет кылыңыз.",
+    "premium.success_title": "Өтүнүч кабыл алынды 🎉",
+    "premium.success_body":
+      "Рахмат! Премиумду тариздөө үчүн WhatsApp'ка жазабыз. Төлөм — mbank которуу.",
+    "premium.success_again": "Дагы бир өтүнүч жөнөтүү",
   },
 } as const;
 

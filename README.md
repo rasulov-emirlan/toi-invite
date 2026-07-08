@@ -56,7 +56,18 @@ so OpenGraph image URLs resolve absolute.
 docker compose up -d --build
 ```
 
+## Premium (payment fake-door)
+
+`/premium` shows the tiers (free · Премиум 990 сом · Про 1490 сом) and captures
+**interest** — name + WhatsApp number + chosen tier — into a `premium_interest`
+table via `POST /api/premium-interest`. No real charge runs yet; it measures
+willingness-to-pay before wiring mbank/FreedomPay. Read the leads with:
+
+```bash
+docker exec toi-invite node -e "const d=new(require('better-sqlite3'))('/data/toi.db');console.table(d.prepare('SELECT created_at,tier,name,phone,comment FROM premium_interest ORDER BY id DESC').all())"
+```
+
 ## Not built yet (v0)
 
-Payments (mbank / FreedomPay), per-guest personalized links, photo upload, more
-templates, tamada/decorator partner referral cut. See `~/.nightshift/state/toi-invite.md`.
+Real payment capture (mbank / FreedomPay), photo upload, more templates,
+tamada/decorator partner referral cut. See `~/.nightshift/state/toi-invite.md`.
