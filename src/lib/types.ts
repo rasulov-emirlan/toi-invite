@@ -24,6 +24,9 @@ export interface InviteRecord {
   venue_name: string;
   venue_map_url: string | null;
   greeting: string;
+  dress_code?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
   created_at: string;
 }
 
@@ -48,6 +51,9 @@ export interface InviteInput {
   venue_name: string;
   venue_map_url?: string | null;
   greeting?: string;
+  dress_code?: string | null;
+  contact_name?: string | null;
+  contact_phone?: string | null;
 }
 
 export interface RsvpInput {

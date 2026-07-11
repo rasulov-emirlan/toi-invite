@@ -21,6 +21,9 @@ export const LIMITS = {
   greeting: 600,
   guestName: 80,
   mapUrl: 500,
+  dressCode: 160,
+  contactName: 80,
+  contactPhone: 40,
   maxGuests: 50,
 } as const;
 
@@ -64,6 +67,9 @@ export interface CleanInvite {
   venue_name: string;
   venue_map_url: string | null;
   greeting: string;
+  dress_code: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
 }
 
 export function validateInvite(input: InviteInput): ValidationResult<CleanInvite> {
@@ -99,6 +105,15 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
   const greeting = str(input.greeting);
   if (greeting.length > LIMITS.greeting) errors.push("greeting");
 
+  const optional = (value: unknown, limit: number, field: string) => {
+    const clean = str(value);
+    if (clean.length > limit) errors.push(field);
+    return clean || null;
+  };
+  const dress_code = optional(input.dress_code, LIMITS.dressCode, "dress_code");
+  const contact_name = optional(input.contact_name, LIMITS.contactName, "contact_name");
+  const contact_phone = optional(input.contact_phone, LIMITS.contactPhone, "contact_phone");
+
   if (errors.length > 0) return { ok: false, errors };
 
   return {
@@ -114,6 +129,9 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
       venue_name,
       venue_map_url,
       greeting,
+      dress_code,
+      contact_name,
+      contact_phone,
     },
   };
 }

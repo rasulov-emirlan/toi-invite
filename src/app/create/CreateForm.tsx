@@ -25,6 +25,10 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
     getEventType("wedding").defaultGreeting[initialLocale],
   );
   const [greetingTouched, setGreetingTouched] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [dressCode, setDressCode] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +63,9 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
           venue_name: venue,
           venue_map_url: mapUrl,
           greeting,
+          dress_code: dressCode,
+          contact_name: contactName,
+          contact_phone: contactPhone,
         }),
       });
       if (!res.ok) {
@@ -87,6 +94,10 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
     setVenue("");
     setMapUrl("");
     setGreetingTouched(false);
+    setShowDetails(false);
+    setDressCode("");
+    setContactName("");
+    setContactPhone("");
     setGreeting(getEventType(eventType).defaultGreeting[locale]);
   }
 
@@ -220,6 +231,36 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
         />
         <p className="hint">{tr("create.field_greeting_hint")}</p>
       </div>
+
+      <section className="optional-panel">
+        <button
+          type="button"
+          className="optional-panel__toggle"
+          aria-expanded={showDetails}
+          onClick={() => setShowDetails((value) => !value)}
+        >
+          <span><b>{tr("create.optional_title")}</b><small>{tr("create.optional_body")}</small></span>
+          <span aria-hidden="true">{showDetails ? "−" : "+"}</span>
+        </button>
+        {showDetails && (
+          <div className="optional-panel__body">
+            <div className="field">
+              <label htmlFor="dress-code">{tr("create.field_dress_code")}</label>
+              <input id="dress-code" value={dressCode} maxLength={160} onChange={(e) => setDressCode(e.target.value)} placeholder={locale === "ky" ? "Коктейль · пастел түстөр" : "Коктейль · пастельные оттенки"} />
+            </div>
+            <div className="row2">
+              <div className="field">
+                <label htmlFor="contact-name">{tr("create.field_contact_name")}</label>
+                <input id="contact-name" value={contactName} maxLength={80} onChange={(e) => setContactName(e.target.value)} placeholder="Айжан" />
+              </div>
+              <div className="field">
+                <label htmlFor="contact-phone">{tr("create.field_contact_phone")}</label>
+                <input id="contact-phone" type="tel" value={contactPhone} maxLength={40} onChange={(e) => setContactPhone(e.target.value)} placeholder="+996 555 00 00 00" />
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* template */}
       <div className="field">
