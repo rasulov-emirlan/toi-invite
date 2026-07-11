@@ -105,6 +105,7 @@ export default async function InvitePage({
       <div className="invite__inner">
         <article className="invite__card">
           <div className="invite__hero" style={heroStyle}>
+            <span className="invite__ornament" aria-hidden="true">✦</span>
             <span className="invite__event">{eventLabel(invite, locale)}</span>
             <h1 className="invite__names">
               {invite.partner ? (
@@ -134,6 +135,21 @@ export default async function InvitePage({
                 {formatEventDate(invite.event_date, locale)}, {invite.event_time}
               </span>
             </div>
+            {invite.dress_code && (
+              <div className="detail">
+                <span className="detail__label">{tr("invite.dress_code")}</span>
+                <span className="detail__value">{invite.dress_code}</span>
+              </div>
+            )}
+            {(invite.contact_name || invite.contact_phone) && (
+              <div className="detail">
+                <span className="detail__label">{tr("invite.contact")}</span>
+                <span className="detail__value">
+                  {invite.contact_name}{invite.contact_name && invite.contact_phone ? " · " : ""}
+                  {invite.contact_phone && <a href={`tel:${invite.contact_phone}`}>{invite.contact_phone}</a>}
+                </span>
+              </div>
+            )}
             <div className="detail">
               <span className="detail__label">{tr("invite.where")}</span>
               <span className="detail__value">

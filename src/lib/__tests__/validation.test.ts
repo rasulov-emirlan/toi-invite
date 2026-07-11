@@ -97,6 +97,27 @@ describe("validateInvite", () => {
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.errors).toContain("greeting");
   });
+
+  it("accepts and trims optional wedding details", () => {
+    const res = validateInvite({
+      ...goodInvite,
+      dress_code: "  Пастельные оттенки  ",
+      contact_name: "  Айжан  ",
+      contact_phone: "  +996 555 00 00 00  ",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.value.dress_code).toBe("Пастельные оттенки");
+      expect(res.value.contact_name).toBe("Айжан");
+      expect(res.value.contact_phone).toBe("+996 555 00 00 00");
+    }
+  });
+
+  it("rejects over-long optional wedding details", () => {
+    const res = validateInvite({ ...goodInvite, dress_code: "x".repeat(LIMITS.dressCode + 1) });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.errors).toContain("dress_code");
+  });
 });
 
 describe("isSafeHttpUrl", () => {

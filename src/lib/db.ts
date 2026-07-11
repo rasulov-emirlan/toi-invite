@@ -38,6 +38,9 @@ function db(): Database.Database {
       venue_name      TEXT NOT NULL,
       venue_map_url   TEXT,
       greeting        TEXT NOT NULL,
+      dress_code      TEXT,
+      contact_name    TEXT,
+      contact_phone   TEXT,
       created_at      TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS rsvps (
@@ -50,6 +53,15 @@ function db(): Database.Database {
     );
     CREATE INDEX IF NOT EXISTS idx_rsvps_slug ON rsvps(invite_slug);
   `);
+  const columns = handle.prepare("PRAGMA table_info(invites)").all() as { name: string }[];
+  const names = new Set(columns.map((column) => column.name));
+  for (const [name, type] of [
+    ["dress_code", "TEXT"],
+    ["contact_name", "TEXT"],
+    ["contact_phone", "TEXT"],
+  ] as const) {
+    if (!names.has(name)) handle.exec(`ALTER TABLE invites ADD COLUMN ${name} ${type}`);
+  }
   _db = handle;
   return _db;
 }
@@ -60,10 +72,12 @@ export function createInvite(clean: CleanInvite): { slug: string; token: string 
   const insert = conn.prepare(`
     INSERT INTO invites
       (slug, organizer_token, event_type, template, locale, honoree, partner,
-       event_date, event_time, venue_name, venue_map_url, greeting)
+       event_date, event_time, venue_name, venue_map_url, greeting, dress_code,
+       contact_name, contact_phone)
     VALUES
       (@slug, @organizer_token, @event_type, @template, @locale, @honoree, @partner,
-       @event_date, @event_time, @venue_name, @venue_map_url, @greeting)
+       @event_date, @event_time, @venue_name, @venue_map_url, @greeting, @dress_code,
+       @contact_name, @contact_phone)
   `);
 
   // Retry on the (astronomically unlikely) slug collision.
@@ -83,6 +97,9 @@ export function createInvite(clean: CleanInvite): { slug: string; token: string 
         venue_name: clean.venue_name,
         venue_map_url: clean.venue_map_url,
         greeting: clean.greeting,
+        dress_code: clean.dress_code,
+        contact_name: clean.contact_name,
+        contact_phone: clean.contact_phone,
       });
       return { slug, token };
     } catch (err) {
