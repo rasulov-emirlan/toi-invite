@@ -169,6 +169,11 @@ const strings = {
     "premium.success_body":
       "Спасибо! Мы напишем вам в WhatsApp, чтобы оформить премиум. Оплата — перевод на mbank.",
     "premium.success_again": "Отправить ещё одну заявку",
+
+    "demo.kicker": "ПРИМЕР ПРИГЛАШЕНИЯ",
+    "demo.foot_cta": "Создать своё приглашение",
+    "create.preview_kicker": "ПРЕДПРОСМОТР",
+    "create.preview_hint": "Так гости увидят ваше приглашение — обновляется по мере заполнения.",
   },
   ky: {
     "brand.name": "Той-Invite",
@@ -325,6 +330,11 @@ const strings = {
     "premium.success_body":
       "Рахмат! Премиумду тариздөө үчүн WhatsApp'ка жазабыз. Төлөм — mbank которуу.",
     "premium.success_again": "Дагы бир өтүнүч жөнөтүү",
+
+    "demo.kicker": "ЧАКЫРУУНУН МИСАЛЫ",
+    "demo.foot_cta": "Өз чакырууңузду түзүү",
+    "create.preview_kicker": "АЛДЫН АЛА КӨРҮҮ",
+    "create.preview_hint": "Меймандар чакырууну ушундай көрүшөт — толтурган сайын жаңырат.",
   },
 } as const;
 

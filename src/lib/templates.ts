@@ -82,3 +82,15 @@ export function getTemplate(key: TemplateKey): TemplateConfig {
   if (!tpl) throw new Error(`unknown template: ${key}`);
   return tpl;
 }
+
+/** The template palette as the CSS custom properties the invite styles read. */
+export function paletteVars(tpl: TemplateConfig): Record<string, string> {
+  return {
+    "--ac": tpl.palette.accent,
+    "--soft": tpl.palette.accentSoft,
+    "--tbg": tpl.palette.bg,
+    "--tink": tpl.palette.ink,
+    "--tmuted": tpl.palette.muted,
+    "--tsurface": tpl.palette.surface,
+  };
+}

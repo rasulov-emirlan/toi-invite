@@ -8,10 +8,13 @@ export default function RsvpForm({
   slug,
   locale,
   initialName = "",
+  demo = false,
 }: {
   slug: string;
   locale: Locale;
   initialName?: string;
+  /** Demo mode (the /demo sample): simulate success locally, send nothing. */
+  demo?: boolean;
 }) {
   const tr = translator(locale);
   const [name, setName] = useState(initialName);
@@ -33,6 +36,10 @@ export default function RsvpForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!attendance || cooldownSec > 0) return;
+    if (demo) {
+      setDone(attendance);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {

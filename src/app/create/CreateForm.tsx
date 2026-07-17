@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EVENT_TYPES, getEventType } from "@/lib/events";
-import { TEMPLATES } from "@/lib/templates";
+import { TEMPLATES, getTemplate, paletteVars } from "@/lib/templates";
 import { translator } from "@/lib/i18n";
 import { whatsappShareUrl } from "@/lib/share";
-import type { EventTypeKey, Locale, TemplateKey } from "@/lib/types";
+import type { EventTypeKey, InviteDisplay, Locale, TemplateKey } from "@/lib/types";
+import InviteCard from "@/components/InviteCard";
 
 interface Result {
   slug: string;
@@ -92,7 +93,8 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
   }
 
   return (
-    <form className="form" onSubmit={submit}>
+    <div className="create-grid">
+      <form className="form" onSubmit={submit}>
       {/* language of the invite */}
       <div className="field">
         <label>{tr("create.field_locale")}</label>
@@ -237,7 +239,9 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
               <span className="swatch">
                 <span
                   style={{
-                    background: `linear-gradient(135deg, ${tpl.palette.bg}, ${tpl.palette.accentSoft} 60%, ${tpl.palette.accent})`,
+                    backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0)), url(${tpl.heroImage})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
                   }}
                 />
               </span>
@@ -249,12 +253,89 @@ export default function CreateForm({ initialLocale }: { initialLocale: Locale })
         </div>
       </div>
 
-      {error && <div className="alert">{error}</div>}
+        {error && <div className="alert">{error}</div>}
 
-      <button type="submit" className="btn" disabled={submitting}>
-        {submitting ? tr("create.submitting") : tr("create.submit")}
-      </button>
-    </form>
+        <button type="submit" className="btn" disabled={submitting}>
+          {submitting ? tr("create.submitting") : tr("create.submit")}
+        </button>
+      </form>
+
+      <LivePreview
+        locale={locale}
+        eventType={eventType}
+        template={template}
+        honoree={honoree}
+        partner={evConfig.hasPartner ? partner : ""}
+        date={date}
+        time={time}
+        venue={venue}
+        mapUrl={mapUrl}
+        greeting={greeting}
+      />
+    </div>
+  );
+}
+
+/** The invite exactly as guests will see it, updating as the form is filled. */
+function LivePreview({
+  locale,
+  eventType,
+  template,
+  honoree,
+  partner,
+  date,
+  time,
+  venue,
+  mapUrl,
+  greeting,
+}: {
+  locale: Locale;
+  eventType: EventTypeKey;
+  template: TemplateKey;
+  honoree: string;
+  partner: string;
+  date: string;
+  time: string;
+  venue: string;
+  mapUrl: string;
+  greeting: string;
+}) {
+  const tr = translator(locale);
+  // Placeholder date a month out so the empty form still previews sensibly.
+  const fallbackDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  const evConfig = getEventType(eventType);
+  const invite: InviteDisplay = {
+    slug: "preview",
+    event_type: eventType,
+    template,
+    locale,
+    honoree: honoree.trim() || "Азамат",
+    partner: evConfig.hasPartner ? partner.trim() || "Айпери" : null,
+    event_date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : fallbackDate,
+    event_time: time || "17:00",
+    venue_name: venue.trim() || "Той-хан «Ала-Тоо»",
+    venue_map_url: mapUrl.trim() || null,
+    greeting: greeting.trim(),
+  };
+
+  const tpl = getTemplate(template);
+  return (
+    <aside className="create-preview">
+      <span className="kicker kicker--red">{tr("create.preview_kicker")}</span>
+      <p className="hint">{tr("create.preview_hint")}</p>
+      <div
+        className="invite invite--embed"
+        lang={locale}
+        style={paletteVars(tpl) as React.CSSProperties}
+      >
+        <InviteCard invite={invite} locale={locale} mode="preview" />
+      </div>
+    </aside>
   );
 }
 

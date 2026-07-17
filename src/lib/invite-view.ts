@@ -1,6 +1,6 @@
 import { getEventType } from "./events";
 import type { CalendarEvent } from "./calendar";
-import type { InviteRecord, Locale } from "./types";
+import type { InviteDisplay, Locale } from "./types";
 
 const RU_MONTHS_GEN = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -22,11 +22,11 @@ export function formatEventDate(dateISO: string, locale: Locale): string {
   return `${d} ${RU_MONTHS_GEN[mi]} ${y}`;
 }
 
-export function eventLabel(invite: InviteRecord, locale: Locale): string {
+export function eventLabel(invite: InviteDisplay, locale: Locale): string {
   return getEventType(invite.event_type).labels[locale];
 }
 
-export function displayNames(invite: InviteRecord, locale: Locale): string {
+export function displayNames(invite: InviteDisplay, locale: Locale): string {
   if (invite.partner && invite.partner.trim().length > 0) {
     const conj = locale === "ky" ? "жана" : "и";
     return `${invite.honoree} ${conj} ${invite.partner}`;
@@ -35,16 +35,16 @@ export function displayNames(invite: InviteRecord, locale: Locale): string {
 }
 
 /** Title used for the browser tab, OG card, and calendar entries. */
-export function inviteTitle(invite: InviteRecord, locale: Locale): string {
+export function inviteTitle(invite: InviteDisplay, locale: Locale): string {
   return `${eventLabel(invite, locale)} · ${displayNames(invite, locale)}`;
 }
 
-export function ogDescription(invite: InviteRecord, locale: Locale): string {
+export function ogDescription(invite: InviteDisplay, locale: Locale): string {
   const parts = [formatEventDate(invite.event_date, locale), invite.event_time, invite.venue_name];
   return parts.filter(Boolean).join(" · ");
 }
 
-export function toCalendarEvent(invite: InviteRecord, locale: Locale): CalendarEvent {
+export function toCalendarEvent(invite: InviteDisplay, locale: Locale): CalendarEvent {
   return {
     title: inviteTitle(invite, locale),
     details: invite.greeting || eventLabel(invite, locale),

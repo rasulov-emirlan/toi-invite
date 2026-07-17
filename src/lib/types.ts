@@ -29,6 +29,9 @@ export interface InviteRecord {
   created_at: string;
 }
 
+/** What the invite card needs to render — no organizer secrets. */
+export type InviteDisplay = Omit<InviteRecord, "organizer_token" | "created_at">;
+
 export interface RsvpRecord {
   id: number;
   invite_slug: string;

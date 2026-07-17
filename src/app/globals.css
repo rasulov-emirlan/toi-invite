@@ -107,6 +107,19 @@ a {
   cursor: default;
 }
 
+/* ghost button for dark (hero) backgrounds */
+.btn--outline-light {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--paper);
+}
+
+.btn--outline-light:hover {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+
 /* ---------- top bar ---------- */
 .topbar {
   border-bottom: 1px solid var(--gray-300);
@@ -421,6 +434,66 @@ a {
   color: var(--paper);
 }
 
+/* ---------- create page: form + live preview ---------- */
+.wrap--create {
+  max-width: 72rem;
+}
+
+.create-grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+.create-grid .form {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.create-preview {
+  min-width: 0;
+}
+
+.create-preview > .kicker {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.create-preview > .hint {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+  margin: 0 0 1rem;
+}
+
+@media (min-width: 64rem) {
+  .create-grid {
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    gap: 3rem;
+  }
+
+  .create-preview {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+/* ---------- demo page banner ---------- */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.25rem;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.demo-banner .kicker {
+  color: #bdbdbd;
+}
+
 /* ---------- invite page (celebratory, template palette) ---------- */
 .invite {
   --ac: #b8860b;
@@ -432,6 +505,16 @@ a {
   min-height: 100vh;
   background: var(--tbg);
   color: var(--tink);
+}
+
+/* invite card embedded in the builder preview: no full-page chrome */
+.invite--embed {
+  min-height: auto;
+  background: transparent;
+}
+
+.invite--embed .invite__card {
+  border-color: var(--soft);
 }
 
 .invite__lang {

@@ -37,9 +37,14 @@ export default async function Landing({
           </span>
           <h1>{tr("landing.title")}</h1>
           <p>{tr("landing.subtitle")}</p>
-          <Link href={createHref} className="btn">
-            {tr("landing.cta")} →
-          </Link>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Link href={createHref} className="btn">
+              {tr("landing.cta")} →
+            </Link>
+            <Link href={`/demo?lang=${locale}`} className="btn btn--outline-light">
+              {tr("landing.demo_cta")}
+            </Link>
+          </div>
         </div>
       </section>
 
