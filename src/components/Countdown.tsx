@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { translator } from "@/lib/i18n";
+import { countdownUnitLabel } from "@/lib/plural";
 import type { Locale } from "@/lib/types";
+
+/** How long after the start we keep showing "Той идёт!" before hiding. */
+const RUNNING_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 /** Target is the event start as epoch milliseconds (UTC-correct, computed server-side). */
 export default function Countdown({
@@ -25,6 +29,8 @@ export default function Countdown({
   if (now === null) return null;
 
   const diff = targetMs - now;
+  // Long past: an old invite shouldn't celebrate forever.
+  if (diff <= -RUNNING_WINDOW_MS) return null;
   if (diff <= 0) {
     return (
       <div className="countdown">
@@ -42,9 +48,9 @@ export default function Countdown({
   const minutes = totalMin % 60;
 
   const units: Array<[number, string]> = [
-    [days, tr("invite.cd_days")],
-    [hours, tr("invite.cd_hours")],
-    [minutes, tr("invite.cd_minutes")],
+    [days, countdownUnitLabel(locale, "day", days)],
+    [hours, countdownUnitLabel(locale, "hour", hours)],
+    [minutes, countdownUnitLabel(locale, "minute", minutes)],
   ];
 
   return (

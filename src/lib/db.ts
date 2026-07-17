@@ -135,6 +135,21 @@ export function createInvite(clean: CleanInvite): { slug: string; token: string 
   throw new Error("could not allocate a unique slug");
 }
 
+/** Full-replace update of an invite's editable fields. */
+export function updateInvite(slug: string, clean: CleanInvite): boolean {
+  const info = db()
+    .prepare(
+      `UPDATE invites
+       SET event_type = @event_type, template = @template, locale = @locale,
+           honoree = @honoree, partner = @partner, event_date = @event_date,
+           event_time = @event_time, venue_name = @venue_name,
+           venue_map_url = @venue_map_url, greeting = @greeting
+       WHERE slug = @slug`,
+    )
+    .run({ slug, ...clean });
+  return info.changes > 0;
+}
+
 export function getInvite(slug: string): InviteRecord | null {
   const row = db().prepare("SELECT * FROM invites WHERE slug = ?").get(slug) as
     | (Omit<InviteRecord, "event_type" | "template" | "locale"> & {

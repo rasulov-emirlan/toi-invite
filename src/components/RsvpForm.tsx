@@ -78,7 +78,7 @@ export default function RsvpForm({
   if (done) {
     return (
       <div className="rsvp">
-        <div className="thanks">
+        <div className="thanks" role="status">
           {done === "yes" ? tr("invite.rsvp_thanks_yes") : tr("invite.rsvp_thanks_no")}
         </div>
       </div>
@@ -99,6 +99,7 @@ export default function RsvpForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
+            autoComplete="name"
             required
           />
         </div>
@@ -150,7 +151,11 @@ export default function RsvpForm({
           </div>
         )}
 
-        {error && <div className="alert">{error}</div>}
+        {error && (
+          <div className="alert" role="alert">
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"

@@ -8,6 +8,7 @@ import { formatKgTimestamp } from "@/lib/calendar";
 import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
 import PersonalLinkGenerator from "./PersonalLinkGenerator";
+import ShareBar from "./ShareBar";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -69,6 +70,8 @@ export default async function RsvpsPage({
             {eventLabel(invite, locale)} · {displayNames(invite, locale)}
           </p>
         </div>
+
+        <ShareBar slug={slug} token={token as string} locale={locale} />
 
         <div className="statgrid">
           <div className="stat">

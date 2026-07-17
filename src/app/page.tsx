@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
+import MyInvites from "@/components/MyInvites";
 
 export default async function Landing({
   searchParams,
@@ -47,6 +48,8 @@ export default async function Landing({
           </div>
         </div>
       </section>
+
+      <MyInvites locale={locale} />
 
       <section className="section">
         <div className="wrap">

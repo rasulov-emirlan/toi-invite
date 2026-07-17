@@ -76,8 +76,7 @@ export default function InviteCard({
         )}
         {invite.greeting && <p className="invite__greeting">{invite.greeting}</p>}
 
-        {mode !== "preview" && <Countdown targetMs={start.getTime()} locale={locale} />}
-
+        {/* The facts a guest opens the link for — before any ceremony. */}
         <div className="detail">
           <span className="detail__label">{tr("invite.when")}</span>
           <span className="detail__value">
@@ -86,24 +85,23 @@ export default function InviteCard({
         </div>
         <div className="detail">
           <span className="detail__label">{tr("invite.where")}</span>
-          <span className="detail__value">
-            {invite.venue_name}
-            {invite.venue_map_url && (
-              <>
-                {" — "}
-                {mode === "preview" ? (
-                  <span className="detail__maplink">{tr("invite.open_map")}</span>
-                ) : (
-                  <a href={invite.venue_map_url} target="_blank" rel="noopener noreferrer">
-                    {tr("invite.open_map")}
-                  </a>
-                )}
-              </>
-            )}
-          </span>
+          <span className="detail__value">{invite.venue_name}</span>
         </div>
 
         <div className="actions">
+          {invite.venue_map_url &&
+            (mode === "preview" ? (
+              <span className="btn-ac btn-ac--solid">📍 {tr("invite.open_map")}</span>
+            ) : (
+              <a
+                className="btn-ac btn-ac--solid"
+                href={invite.venue_map_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                📍 {tr("invite.open_map")}
+              </a>
+            ))}
           {mode === "preview" ? (
             <span className="btn-ac">📅 {tr("invite.add_to_calendar")}</span>
           ) : (
@@ -122,6 +120,8 @@ export default function InviteCard({
             </a>
           )}
         </div>
+
+        {mode !== "preview" && <Countdown targetMs={start.getTime()} locale={locale} />}
 
         {mode === "preview" ? (
           <RsvpStub locale={locale} />
