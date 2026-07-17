@@ -118,7 +118,10 @@ export default async function RsvpsPage({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.guest_name}</td>
+                    <td>
+                      {row.guest_name}
+                      {row.wish && <span className="rsvp-wish">«{row.wish}»</span>}
+                    </td>
                     <td>
                       <span className={`pill pill--${row.attendance}`}>
                         {row.attendance === "yes"

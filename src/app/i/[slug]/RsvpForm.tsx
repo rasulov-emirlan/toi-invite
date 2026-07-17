@@ -17,6 +17,7 @@ export default function RsvpForm({
   const [name, setName] = useState(initialName);
   const [attendance, setAttendance] = useState<Attendance | null>(null);
   const [guests, setGuests] = useState(1);
+  const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cooldownSec, setCooldownSec] = useState(0);
@@ -43,6 +44,7 @@ export default function RsvpForm({
           guest_name: name,
           attendance,
           guests_count: attendance === "yes" ? guests : 1,
+          wish,
         }),
       });
       if (res.status === 429) {
@@ -124,6 +126,19 @@ export default function RsvpForm({
               max={50}
               value={guests}
               onChange={(e) => setGuests(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+            />
+          </div>
+        )}
+
+        {attendance !== null && (
+          <div className="field">
+            <label htmlFor="g-wish">{tr("invite.rsvp_wish")}</label>
+            <textarea
+              id="g-wish"
+              value={wish}
+              maxLength={300}
+              placeholder={tr("invite.rsvp_wish_ph")}
+              onChange={(e) => setWish(e.target.value)}
             />
           </div>
         )}

@@ -104,7 +104,7 @@ export default async function InvitePage({
   };
 
   return (
-    <div className="invite" style={paletteStyle}>
+    <div className="invite" lang={locale} style={paletteStyle}>
       <div className="invite__lang">
         <Link href={`/i/${slug}?lang=${other}${toQuery}`}>
           {other === "ky" ? "Кыргызча" : "Русский"}

@@ -46,7 +46,7 @@ export default async function Landing({
       <section className="section">
         <div className="wrap">
           <span className="kicker kicker--red">{tr("landing.how_kicker")}</span>
-          <h2>{tr("landing.title")}</h2>
+          <h2>{tr("landing.how_title")}</h2>
           <div className="grid3">
             <div className="card">
               <span className="card__num">01</span>
@@ -72,7 +72,7 @@ export default async function Landing({
           <span className="kicker kicker--red">
             {tr("landing.features_kicker")}
           </span>
-          <h2>{tr("brand.name")}</h2>
+          <h2>{tr("landing.features_title")}</h2>
           <ul className="featurelist">
             <li>{tr("landing.feature_bilingual")}</li>
             <li>{tr("landing.feature_events")}</li>

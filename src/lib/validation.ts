@@ -22,6 +22,7 @@ export const LIMITS = {
   guestName: 80,
   mapUrl: 500,
   maxGuests: 50,
+  wish: 300,
 } as const;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -122,6 +123,7 @@ export interface CleanRsvp {
   guest_name: string;
   attendance: Attendance;
   guests_count: number;
+  wish: string | null;
 }
 
 function isAttendance(v: unknown): v is Attendance {
@@ -142,6 +144,10 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
       : Number(String(input.guests_count).trim());
   if (!Number.isInteger(n) || n < 1 || n > LIMITS.maxGuests) errors.push("guests_count");
 
+  const wishRaw = str(input.wish);
+  if (wishRaw.length > LIMITS.wish) errors.push("wish");
+  const wish = wishRaw.length > 0 ? wishRaw : null;
+
   if (errors.length > 0) return { ok: false, errors };
 
   return {
@@ -150,6 +156,7 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
       guest_name,
       attendance: input.attendance as Attendance,
       guests_count: n,
+      wish,
     },
   };
 }

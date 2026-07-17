@@ -754,6 +754,15 @@ table.rsvps th {
   color: var(--gray-500);
 }
 
+.rsvp-wish {
+  display: block;
+  white-space: normal;
+  max-width: 24rem;
+  color: var(--gray-500);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
 .pill {
   font-family: var(--font-mono);
   font-size: 0.7rem;

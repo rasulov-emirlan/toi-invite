@@ -13,6 +13,7 @@ import type {
 import type { CleanInvite } from "./validation";
 import type { CleanPremiumInterest } from "./premium";
 import { generateSlug, generateToken } from "./slug";
+import { guestNameKey } from "./personalize";
 
 const DB_PATH = resolve(process.env.DB_PATH ?? "./data/toi.db");
 
@@ -60,8 +61,38 @@ function db(): Database.Database {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  migrateRsvps(handle);
   _db = handle;
   return _db;
+}
+
+/**
+ * Additive rsvps migrations for databases created before these columns existed:
+ *  - wish: optional congratulation text from the guest.
+ *  - guest_key: JS-normalized guest_name (SQLite lower() is ASCII-only), so a
+ *    guest re-submitting updates their row instead of double-counting.
+ */
+function migrateRsvps(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(rsvps)") as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!cols.has("wish")) {
+    handle.exec("ALTER TABLE rsvps ADD COLUMN wish TEXT");
+  }
+  if (!cols.has("guest_key")) {
+    handle.exec("ALTER TABLE rsvps ADD COLUMN guest_key TEXT");
+    const rows = handle
+      .prepare("SELECT id, guest_name FROM rsvps")
+      .all() as Array<{ id: number; guest_name: string }>;
+    const backfill = handle.prepare("UPDATE rsvps SET guest_key = ? WHERE id = ?");
+    const run = handle.transaction(() => {
+      for (const r of rows) backfill.run(guestNameKey(r.guest_name), r.id);
+    });
+    run();
+  }
+  handle.exec(
+    "CREATE INDEX IF NOT EXISTS idx_rsvps_slug_key ON rsvps(invite_slug, guest_key)",
+  );
 }
 
 export function createInvite(clean: CleanInvite): { slug: string; token: string } {
@@ -123,18 +154,39 @@ export function getInvite(slug: string): InviteRecord | null {
 
 export function addRsvp(
   slug: string,
-  data: { guest_name: string; attendance: Attendance; guests_count: number },
+  data: { guest_name: string; attendance: Attendance; guests_count: number; wish: string | null },
 ): boolean {
   const conn = db();
-  const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
-  if (!exists) return false;
-  conn
-    .prepare(
-      `INSERT INTO rsvps (invite_slug, guest_name, attendance, guests_count)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .run(slug, data.guest_name, data.attendance, data.guests_count);
-  return true;
+  const upsert = conn.transaction((): boolean => {
+    const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
+    if (!exists) return false;
+    const key = guestNameKey(data.guest_name);
+    // Same guest answering again (typo fix, changed mind) updates their row —
+    // otherwise every re-submit inflates the organizer's headcount.
+    const prior = conn
+      .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_key = ? ORDER BY id DESC LIMIT 1")
+      .get(slug, key) as { id: number } | undefined;
+    if (prior) {
+      conn
+        .prepare(
+          `UPDATE rsvps
+           SET guest_name = ?, attendance = ?, guests_count = ?,
+               wish = COALESCE(?, wish),
+               created_at = datetime('now')
+           WHERE id = ?`,
+        )
+        .run(data.guest_name, data.attendance, data.guests_count, data.wish, prior.id);
+    } else {
+      conn
+        .prepare(
+          `INSERT INTO rsvps (invite_slug, guest_name, guest_key, attendance, guests_count, wish)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+        )
+        .run(slug, data.guest_name, key, data.attendance, data.guests_count, data.wish);
+    }
+    return true;
+  });
+  return upsert();
 }
 
 export function listRsvps(slug: string): RsvpRecord[] {

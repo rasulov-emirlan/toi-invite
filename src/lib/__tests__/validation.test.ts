@@ -150,3 +150,22 @@ describe("validateRsvp", () => {
     }
   });
 });
+
+describe("validateRsvp wish", () => {
+  const base = { guest_name: "Айбек", attendance: "yes", guests_count: 2 };
+
+  it("accepts a trimmed wish and nulls an empty one", () => {
+    const withWish = validateRsvp({ ...base, wish: "  Бактылуу болгула!  " });
+    expect(withWish.ok && withWish.value.wish).toBe("Бактылуу болгула!");
+    const empty = validateRsvp({ ...base, wish: "   " });
+    expect(empty.ok && empty.value.wish).toBe(null);
+    const missing = validateRsvp(base);
+    expect(missing.ok && missing.value.wish).toBe(null);
+  });
+
+  it("rejects a wish over the limit", () => {
+    const r = validateRsvp({ ...base, wish: "ж".repeat(301) });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors).toContain("wish");
+  });
+});

@@ -34,6 +34,7 @@ export function rsvpsToCsv(rows: RsvpRecord[], locale: Locale): string {
     tr("rsvps.col_name"),
     tr("rsvps.col_status"),
     tr("rsvps.col_guests"),
+    tr("rsvps.col_wish"),
     tr("rsvps.col_when"),
   ];
   const lines = [header.map(esc).join(",")];
@@ -41,7 +42,13 @@ export function rsvpsToCsv(rows: RsvpRecord[], locale: Locale): string {
     const status = r.attendance === "yes" ? tr("rsvps.status_yes") : tr("rsvps.status_no");
     const guests = r.attendance === "yes" ? String(r.guests_count) : "";
     lines.push(
-      [esc(r.guest_name), esc(status), esc(guests), esc(formatKgTimestamp(r.created_at))].join(","),
+      [
+        esc(r.guest_name),
+        esc(status),
+        esc(guests),
+        esc(r.wish ?? ""),
+        esc(formatKgTimestamp(r.created_at)),
+      ].join(","),
     );
   }
   const BOM = String.fromCharCode(0xfeff);
