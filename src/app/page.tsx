@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
+import MyInvites from "@/components/MyInvites";
 
 export default async function Landing({
   searchParams,
@@ -37,16 +38,23 @@ export default async function Landing({
           </span>
           <h1>{tr("landing.title")}</h1>
           <p>{tr("landing.subtitle")}</p>
-          <Link href={createHref} className="btn">
-            {tr("landing.cta")} →
-          </Link>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <Link href={createHref} className="btn">
+              {tr("landing.cta")} →
+            </Link>
+            <Link href={`/demo?lang=${locale}`} className="btn btn--outline-light">
+              {tr("landing.demo_cta")}
+            </Link>
+          </div>
         </div>
       </section>
+
+      <MyInvites locale={locale} />
 
       <section className="section">
         <div className="wrap">
           <span className="kicker kicker--red">{tr("landing.how_kicker")}</span>
-          <h2>{tr("landing.title")}</h2>
+          <h2>{tr("landing.how_title")}</h2>
           <div className="grid3">
             <div className="card">
               <span className="card__num">01</span>
@@ -72,7 +80,7 @@ export default async function Landing({
           <span className="kicker kicker--red">
             {tr("landing.features_kicker")}
           </span>
-          <h2>{tr("brand.name")}</h2>
+          <h2>{tr("landing.features_title")}</h2>
           <ul className="featurelist">
             <li>{tr("landing.feature_bilingual")}</li>
             <li>{tr("landing.feature_events")}</li>

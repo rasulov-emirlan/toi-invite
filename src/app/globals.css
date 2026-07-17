@@ -107,6 +107,19 @@ a {
   cursor: default;
 }
 
+/* ghost button for dark (hero) backgrounds */
+.btn--outline-light {
+  background: transparent;
+  color: var(--paper);
+  border-color: var(--paper);
+}
+
+.btn--outline-light:hover {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--paper);
+}
+
 /* ---------- top bar ---------- */
 .topbar {
   border-bottom: 1px solid var(--gray-300);
@@ -343,7 +356,8 @@ a {
 }
 
 .tpl-choice[aria-pressed="true"] {
-  border: 2px solid var(--ink);
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink), 0 0 0 1px var(--ink);
 }
 
 .tpl-choice .swatch {
@@ -369,6 +383,71 @@ a {
   background: #fdecee;
   padding: 0.8rem 1rem;
   font-size: 0.9rem;
+}
+
+.saved-note {
+  border: 1px solid #1f7a54;
+  color: #14532d;
+  background: #ecf7f0;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+}
+
+.saved-note a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* organizer share bar (dashboard) */
+.sharebar {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0 0 2rem;
+}
+
+/* "my invites" list (landing, localStorage-backed) */
+.myinvites {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0;
+}
+
+.myinvites li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.myinvites__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.myinvites__links {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.myinvites__links a {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-800);
+  text-decoration: none;
+  border-bottom: 1px solid var(--red);
+}
+
+.myinvites__links a:hover {
+  color: var(--red);
 }
 
 /* success panel */
@@ -421,6 +500,66 @@ a {
   color: var(--paper);
 }
 
+/* ---------- create page: form + live preview ---------- */
+.wrap--create {
+  max-width: 72rem;
+}
+
+.create-grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+.create-grid .form {
+  margin-top: 0;
+  min-width: 0;
+}
+
+.create-preview {
+  min-width: 0;
+}
+
+.create-preview > .kicker {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.create-preview > .hint {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+  margin: 0 0 1rem;
+}
+
+@media (min-width: 64rem) {
+  .create-grid {
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    gap: 3rem;
+  }
+
+  .create-preview {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+/* ---------- demo page banner ---------- */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.25rem;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.demo-banner .kicker {
+  color: #bdbdbd;
+}
+
 /* ---------- invite page (celebratory, template palette) ---------- */
 .invite {
   --ac: #b8860b;
@@ -432,6 +571,16 @@ a {
   min-height: 100vh;
   background: var(--tbg);
   color: var(--tink);
+}
+
+/* invite card embedded in the builder preview: no full-page chrome */
+.invite--embed {
+  min-height: auto;
+  background: transparent;
+}
+
+.invite--embed .invite__card {
+  border-color: var(--soft);
 }
 
 .invite__lang {
@@ -566,7 +715,7 @@ a {
   display: flex;
   justify-content: center;
   gap: 1.25rem;
-  margin: 0 0 2rem;
+  margin: 2rem 0 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -695,6 +844,41 @@ a {
   color: var(--ac);
 }
 
+/* comfortable touch targets for the guest page's interactive elements */
+.btn-ac,
+.rsvp .attend button {
+  min-height: 44px;
+}
+
+/* the smallest phones this audience actually uses */
+@media (max-width: 380px) {
+  .invite__inner {
+    padding: 1rem 0.6rem 3rem;
+  }
+
+  .invite__body {
+    padding: 1.5rem 1rem 1.75rem;
+  }
+
+  .invite__hero {
+    padding: 2.5rem 1rem 2rem;
+  }
+
+  .detail {
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .rsvp .attend {
+    flex-direction: column;
+  }
+
+  .actions .btn-ac {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* ---------- organizer rsvp table ---------- */
 .statgrid {
   display: grid;
@@ -752,6 +936,15 @@ table.rsvps th {
   font-size: 0.68rem;
   letter-spacing: 0.06em;
   color: var(--gray-500);
+}
+
+.rsvp-wish {
+  display: block;
+  white-space: normal;
+  max-width: 24rem;
+  color: var(--gray-500);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
 }
 
 .pill {

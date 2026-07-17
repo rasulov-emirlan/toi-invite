@@ -31,7 +31,8 @@ export const TEMPLATES: TemplateConfig[] = [
     palette: {
       bg: "#fbf5e9",
       ink: "#2a2016",
-      accent: "#b8860b",
+      // Dark enough for 4.5:1 on the card surface — the accent is also small text.
+      accent: "#8a6508",
       accentSoft: "#e9d9a8",
       muted: "#7a6a4f",
       surface: "#fffdf7",
@@ -59,7 +60,7 @@ export const TEMPLATES: TemplateConfig[] = [
     palette: {
       bg: "#fdf0f0",
       ink: "#2c1720",
-      accent: "#c04664",
+      accent: "#a83a55",
       accentSoft: "#f4cdd6",
       muted: "#8a5c68",
       surface: "#fffafb",
@@ -81,4 +82,16 @@ export function getTemplate(key: TemplateKey): TemplateConfig {
   const tpl = BY_KEY.get(key);
   if (!tpl) throw new Error(`unknown template: ${key}`);
   return tpl;
+}
+
+/** The template palette as the CSS custom properties the invite styles read. */
+export function paletteVars(tpl: TemplateConfig): Record<string, string> {
+  return {
+    "--ac": tpl.palette.accent,
+    "--soft": tpl.palette.accentSoft,
+    "--tbg": tpl.palette.bg,
+    "--tink": tpl.palette.ink,
+    "--tmuted": tpl.palette.muted,
+    "--tsurface": tpl.palette.surface,
+  };
 }

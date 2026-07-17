@@ -3,21 +3,11 @@ import Link from "next/link";
 import { getInvite } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
-import { whatsappShareUrl } from "@/lib/share";
 import { isLocale, translator } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
-import { eventInstant, googleCalendarUrl } from "@/lib/calendar";
-import {
-  displayNames,
-  eventLabel,
-  formatEventDate,
-  inviteTitle,
-  ogDescription,
-  toCalendarEvent,
-} from "@/lib/invite-view";
+import { inviteTitle, ogDescription } from "@/lib/invite-view";
 import type { Locale } from "@/lib/types";
-import Countdown from "./Countdown";
-import RsvpForm from "./RsvpForm";
+import InviteCard from "@/components/InviteCard";
 
 export const dynamic = "force-dynamic";
 
@@ -78,17 +68,13 @@ export default async function InvitePage({
   }
   const { invite, locale, slug } = r;
   const guestName = sanitizeGuestName((await searchParams).to);
-  const tr = translator(locale);
   const tpl = getTemplate(invite.template);
   const other: Locale = locale === "ru" ? "ky" : "ru";
-  const names = displayNames(invite, locale);
-  const { start } = eventInstant(invite.event_date, invite.event_time);
   const toQuery = guestName ? `&to=${encodeURIComponent(guestName)}` : "";
   // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
   // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
   // relative.
   const shareBase = process.env.APP_BASE_URL ?? "http://localhost:3000";
-  const shareUrl = whatsappShareUrl(tr("create.share_text"), `${shareBase}/i/${slug}`);
 
   const paletteStyle = {
     ["--ac" as string]: tpl.palette.accent,
@@ -99,12 +85,8 @@ export default async function InvitePage({
     ["--tsurface" as string]: tpl.palette.surface,
   } as React.CSSProperties;
 
-  const heroStyle: React.CSSProperties = {
-    backgroundImage: `url(${tpl.heroImage})`,
-  };
-
   return (
-    <div className="invite" style={paletteStyle}>
+    <div className="invite" lang={locale} style={paletteStyle}>
       <div className="invite__lang">
         <Link href={`/i/${slug}?lang=${other}${toQuery}`}>
           {other === "ky" ? "Кыргызча" : "Русский"}
@@ -112,82 +94,14 @@ export default async function InvitePage({
       </div>
 
       <div className="invite__inner">
-        <article className="invite__card">
-          <div className="invite__hero" style={heroStyle}>
-            <span className="invite__event">{eventLabel(invite, locale)}</span>
-            <h1 className="invite__names">
-              {invite.partner ? (
-                <>
-                  {invite.honoree}
-                  <span className="invite__amp">
-                    {locale === "ky" ? "жана" : "и"}
-                  </span>
-                  {invite.partner}
-                </>
-              ) : (
-                invite.honoree
-              )}
-            </h1>
-          </div>
-
-          <div className="invite__body">
-            {guestName && (
-              <p className="invite__salutation">
-                {tr("invite.salutation").replace("{name}", guestName)}
-              </p>
-            )}
-            {invite.greeting && (
-              <p className="invite__greeting">{invite.greeting}</p>
-            )}
-
-            <Countdown targetMs={start.getTime()} locale={locale} />
-
-            <div className="detail">
-              <span className="detail__label">{tr("invite.when")}</span>
-              <span className="detail__value">
-                {formatEventDate(invite.event_date, locale)}, {invite.event_time}
-              </span>
-            </div>
-            <div className="detail">
-              <span className="detail__label">{tr("invite.where")}</span>
-              <span className="detail__value">
-                {invite.venue_name}
-                {invite.venue_map_url && (
-                  <>
-                    {" — "}
-                    <a href={invite.venue_map_url} target="_blank" rel="noopener noreferrer">
-                      {tr("invite.open_map")}
-                    </a>
-                  </>
-                )}
-              </span>
-            </div>
-
-            <div className="actions">
-              <a
-                className="btn-ac"
-                href={googleCalendarUrl(toCalendarEvent(invite, locale))}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                📅 {tr("invite.add_to_calendar")}
-              </a>
-              <a className="btn-ac" href={`/api/ics/${slug}?lang=${locale}`}>
-                ⬇ .ics
-              </a>
-            </div>
-
-            <RsvpForm slug={slug} locale={locale} initialName={guestName} />
-          </div>
-
-          <div className="invite__foot">
-            <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-              {tr("invite.share")}
-            </a>
-            {" · "}
-            {names} · <Link href="/">Той·Invite</Link>
-          </div>
-        </article>
+        <InviteCard
+          invite={invite}
+          locale={locale}
+          mode="live"
+          slug={slug}
+          guestName={guestName || undefined}
+          shareBase={shareBase}
+        />
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ function row(p: Partial<RsvpRecord>): RsvpRecord {
     guest_name: "Гость",
     attendance: "yes",
     guests_count: 1,
+    wish: null,
+    guest_ref: null,
     created_at: "2026-07-07 05:00:00",
     ...p,
   };
@@ -19,12 +21,12 @@ describe("rsvpsToCsv", () => {
     const csv = rsvpsToCsv([], "ru");
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     const firstLine = csv.slice(1).split("\r\n")[0];
-    expect(firstLine).toBe("Имя,Ответ,Гостей,Когда ответил");
+    expect(firstLine).toBe("Имя,Ответ,Гостей,Пожелание,Когда ответил");
   });
 
   it("localizes the header in Kyrgyz", () => {
     const csv = rsvpsToCsv([], "ky");
-    expect(csv.slice(1).split("\r\n")[0]).toBe("Ысым,Жооп,Мейман,Качан жооп берди");
+    expect(csv.slice(1).split("\r\n")[0]).toBe("Ысым,Жооп,Мейман,Каалоо-тилек,Качан жооп берди");
   });
 
   it("renders yes/no rows with localized status and KG-local time", () => {
@@ -37,9 +39,9 @@ describe("rsvpsToCsv", () => {
     );
     const lines = csv.slice(1).trimEnd().split("\r\n");
     // 05:00 UTC -> 11:00 Bishkek
-    expect(lines[1]).toBe("Нургүл,Придёт,3,2026-07-07 11:00");
+    expect(lines[1]).toBe("Нургүл,Придёт,3,,2026-07-07 11:00");
     // "no" row: no guest count, status "Не придёт"
-    expect(lines[2]).toBe("Бакыт,Не придёт,,2026-07-07 11:00");
+    expect(lines[2]).toBe("Бакыт,Не придёт,,,2026-07-07 11:00");
   });
 
   it("escapes commas, quotes and newlines per RFC-4180", () => {
@@ -49,6 +51,15 @@ describe("rsvpsToCsv", () => {
     );
     const dataLine = csv.slice(1).split("\r\n")[1];
     expect(dataLine.startsWith('"Иван, ""Босс""\nСмит"')).toBe(true);
+  });
+
+  it("includes the guest wish column, escaped", () => {
+    const csv = rsvpsToCsv(
+      [row({ guest_name: "Нургүл", wish: "Бактылуу болгула, эки жаш!" })],
+      "ky",
+    );
+    const lines = csv.slice(1).trimEnd().split("\r\n");
+    expect(lines[1]).toBe("Нургүл,Келет,1,\"Бактылуу болгула, эки жаш!\",2026-07-07 11:00");
   });
 
   it("uses CRLF line endings", () => {

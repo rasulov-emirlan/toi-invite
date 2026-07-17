@@ -22,7 +22,10 @@ const strings = {
     "landing.subtitle":
       "Свадьба, кыз узатуу, сүннөт той, юбилей — создайте красивое приглашение со ссылкой, картой и учётом гостей. Кыргызча жана орусча.",
     "landing.cta": "Создать приглашение",
+    "landing.demo_cta": "Посмотреть пример",
     "landing.how_kicker": "КАК ЭТО РАБОТАЕТ",
+    "landing.how_title": "Три шага — и ссылка готова",
+    "landing.features_title": "Сделано для тоя",
     "landing.step1_title": "Заполните детали",
     "landing.step1_body": "Тип тоя, имена, дата, место и пару слов гостям.",
     "landing.step2_title": "Выберите шаблон",
@@ -39,7 +42,7 @@ const strings = {
     "landing.feature_som": "Оплата в сомах — mbank, без карты из-за рубежа",
     "landing.pricing_kicker": "ЦЕНА",
     "landing.pricing_note":
-      "Базовое приглашение — бесплатно на время беты. Премиум-шаблоны и персональные приглашения для каждого гостя — скоро.",
+      "Приглашение, именные ссылки и учёт гостей — бесплатно на время беты. Премиум-шаблоны и оформление под заказ — скоро.",
     "landing.footer": "Сделано в Кыргызстане · для тоя",
 
     "create.kicker": "НОВОЕ ПРИГЛАШЕНИЕ",
@@ -90,6 +93,8 @@ const strings = {
     "invite.attend_yes": "Келем — приду",
     "invite.attend_no": "Келбейм — не смогу",
     "invite.rsvp_guests": "Сколько человек (включая вас)",
+    "invite.rsvp_wish": "Пожелание (необязательно)",
+    "invite.rsvp_wish_ph": "Тёплые слова и каалоо-тилек для виновников торжества…",
     "invite.rsvp_submit": "Отправить ответ",
     "invite.rsvp_submitting": "Отправляем…",
     "invite.rsvp_thanks_yes": "Рахмат! Ждём вас на тое 🎉",
@@ -101,9 +106,6 @@ const strings = {
     "invite.not_found_body": "Возможно, ссылка неверна или приглашение удалено.",
     "invite.locale_name_ru": "Русский",
     "invite.locale_name_ky": "Кыргызча",
-    "invite.cd_days": "дней",
-    "invite.cd_hours": "часов",
-    "invite.cd_minutes": "минут",
     "invite.cd_started": "Той идёт! 🎉",
 
     "rsvps.kicker": "СПИСОК ГОСТЕЙ",
@@ -115,6 +117,7 @@ const strings = {
     "rsvps.col_name": "Имя",
     "rsvps.col_status": "Ответ",
     "rsvps.col_guests": "Гостей",
+    "rsvps.col_wish": "Пожелание",
     "rsvps.col_when": "Когда ответил",
     "rsvps.status_yes": "Придёт",
     "rsvps.status_no": "Не придёт",
@@ -163,6 +166,26 @@ const strings = {
     "premium.success_body":
       "Спасибо! Мы напишем вам в WhatsApp, чтобы оформить премиум. Оплата — перевод на mbank.",
     "premium.success_again": "Отправить ещё одну заявку",
+
+
+    "edit.kicker": "РЕДАКТИРОВАНИЕ",
+    "edit.title": "Измените приглашение",
+    "edit.subtitle": "Ссылка для гостей останется прежней — гости увидят обновлённую версию.",
+    "edit.submit": "Сохранить изменения",
+    "edit.saved": "Сохранено! Гости уже видят новую версию.",
+    "edit.back_to_dashboard": "← К списку гостей",
+    "rsvps.copy_guest_link": "Копировать ссылку для гостей",
+    "rsvps.edit_invite": "Редактировать",
+    "create.success_saved_hint": "Ссылки также сохранены в этом браузере — найдёте их на главной странице.",
+    "my.kicker": "МОИ ПРИГЛАШЕНИЯ",
+    "my.title": "Созданы в этом браузере",
+    "my.open": "Открыть",
+    "my.guests": "Список гостей",
+    "my.edit": "Редактировать",
+    "demo.kicker": "ПРИМЕР ПРИГЛАШЕНИЯ",
+    "demo.foot_cta": "Создать своё приглашение",
+    "create.preview_kicker": "ПРЕДПРОСМОТР",
+    "create.preview_hint": "Так гости увидят ваше приглашение — обновляется по мере заполнения.",
   },
   ky: {
     "brand.name": "Той-Invite",
@@ -172,7 +195,10 @@ const strings = {
     "landing.subtitle":
       "Үйлөнүү тою, кыз узатуу, сүннөт той, юбилей — шилтемеси, картасы жана меймандарды эсептөөсү бар кооз чакыруу түзүңүз. Кыргызча жана орусча.",
     "landing.cta": "Чакыруу түзүү",
+    "landing.demo_cta": "Мисалды көрүү",
     "landing.how_kicker": "КАНДАЙ ИШТЕЙТ",
+    "landing.how_title": "Үч кадам — шилтеме даяр",
+    "landing.features_title": "Той үчүн жасалган",
     "landing.step1_title": "Маалыматты толтуруңуз",
     "landing.step1_body": "Той түрү, ысымдар, күнү, орду жана меймандарга бир нече сөз.",
     "landing.step2_title": "Үлгү тандаңыз",
@@ -189,7 +215,7 @@ const strings = {
     "landing.feature_som": "Сом менен төлөм — mbank, чет элдик картасыз",
     "landing.pricing_kicker": "БААСЫ",
     "landing.pricing_note":
-      "Негизги чакыруу — бета учурунда акысыз. Премиум үлгүлөр жана ар бир мейманга жеке чакыруу — жакында.",
+      "Чакыруу, аты жазылган шилтемелер жана меймандарды эсептөө — бета учурунда акысыз. Премиум үлгүлөр жана заказ боюнча жасалгалоо — жакында.",
     "landing.footer": "Кыргызстанда жасалган · той үчүн",
 
     "create.kicker": "ЖАҢЫ ЧАКЫРУУ",
@@ -240,6 +266,8 @@ const strings = {
     "invite.attend_yes": "Келем",
     "invite.attend_no": "Келбейм",
     "invite.rsvp_guests": "Канча киши (өзүңүздү кошкондо)",
+    "invite.rsvp_wish": "Каалоо-тилек (милдеттүү эмес)",
+    "invite.rsvp_wish_ph": "Той ээлерине жылуу сөздөр жана каалоо-тилектер…",
     "invite.rsvp_submit": "Жооп жөнөтүү",
     "invite.rsvp_submitting": "Жөнөтүлүүдө…",
     "invite.rsvp_thanks_yes": "Рахмат! Тойдо күтөбүз 🎉",
@@ -251,9 +279,6 @@ const strings = {
     "invite.not_found_body": "Балким шилтеме туура эмес же чакыруу өчүрүлгөн.",
     "invite.locale_name_ru": "Русский",
     "invite.locale_name_ky": "Кыргызча",
-    "invite.cd_days": "күн",
-    "invite.cd_hours": "саат",
-    "invite.cd_minutes": "мүнөт",
     "invite.cd_started": "Той башталды! 🎉",
 
     "rsvps.kicker": "МЕЙМАНДАР ТИЗМЕСИ",
@@ -265,6 +290,7 @@ const strings = {
     "rsvps.col_name": "Ысым",
     "rsvps.col_status": "Жооп",
     "rsvps.col_guests": "Мейман",
+    "rsvps.col_wish": "Каалоо-тилек",
     "rsvps.col_when": "Качан жооп берди",
     "rsvps.status_yes": "Келет",
     "rsvps.status_no": "Келбейт",
@@ -313,6 +339,26 @@ const strings = {
     "premium.success_body":
       "Рахмат! Премиумду тариздөө үчүн WhatsApp'ка жазабыз. Төлөм — mbank которуу.",
     "premium.success_again": "Дагы бир өтүнүч жөнөтүү",
+
+
+    "edit.kicker": "ОҢДОО",
+    "edit.title": "Чакырууну өзгөртүңүз",
+    "edit.subtitle": "Меймандар үчүн шилтеме ошол бойдон калат — меймандар жаңыланган версияны көрүшөт.",
+    "edit.submit": "Өзгөртүүлөрдү сактоо",
+    "edit.saved": "Сакталды! Меймандар жаңы версияны көрүп жатышат.",
+    "edit.back_to_dashboard": "← Меймандар тизмесине",
+    "rsvps.copy_guest_link": "Меймандар шилтемесин көчүрүү",
+    "rsvps.edit_invite": "Оңдоо",
+    "create.success_saved_hint": "Шилтемелер бул браузерде да сакталды — аларды башкы беттен табасыз.",
+    "my.kicker": "МЕНИН ЧАКЫРУУЛАРЫМ",
+    "my.title": "Бул браузерде түзүлгөн",
+    "my.open": "Ачуу",
+    "my.guests": "Меймандар тизмеси",
+    "my.edit": "Оңдоо",
+    "demo.kicker": "ЧАКЫРУУНУН МИСАЛЫ",
+    "demo.foot_cta": "Өз чакырууңузду түзүү",
+    "create.preview_kicker": "АЛДЫН АЛА КӨРҮҮ",
+    "create.preview_hint": "Меймандар чакырууну ушундай көрүшөт — толтурган сайын жаңырат.",
   },
 } as const;
 

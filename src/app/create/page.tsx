@@ -21,7 +21,7 @@ export default async function CreatePage({
           </Link>
         </div>
       </header>
-      <main className="wrap wrap--narrow">
+      <main className="wrap wrap--create">
         <div className="page-head">
           <span className="kicker kicker--red">{tr("create.kicker")}</span>
           <h1>{tr("create.title")}</h1>

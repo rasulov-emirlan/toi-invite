@@ -60,8 +60,33 @@ function db(): Database.Database {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+  migrateRsvps(handle);
   _db = handle;
   return _db;
+}
+
+/**
+ * Additive rsvps migrations for databases created before these columns existed:
+ *  - wish: optional congratulation text from the guest.
+ *  - guest_ref: opaque per-browser id, so the same guest re-submitting updates
+ *    their row instead of double-counting — without letting anyone overwrite a
+ *    stranger's answer by typing the same name. Legacy rows keep NULL (each was
+ *    a distinct submission; the unique index ignores NULLs).
+ */
+function migrateRsvps(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(rsvps)") as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!cols.has("wish")) {
+    handle.exec("ALTER TABLE rsvps ADD COLUMN wish TEXT");
+  }
+  if (!cols.has("guest_ref")) {
+    handle.exec("ALTER TABLE rsvps ADD COLUMN guest_ref TEXT");
+  }
+  handle.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_rsvps_slug_ref
+     ON rsvps(invite_slug, guest_ref) WHERE guest_ref IS NOT NULL`,
+  );
 }
 
 export function createInvite(clean: CleanInvite): { slug: string; token: string } {
@@ -104,6 +129,21 @@ export function createInvite(clean: CleanInvite): { slug: string; token: string 
   throw new Error("could not allocate a unique slug");
 }
 
+/** Full-replace update of an invite's editable fields. */
+export function updateInvite(slug: string, clean: CleanInvite): boolean {
+  const info = db()
+    .prepare(
+      `UPDATE invites
+       SET event_type = @event_type, template = @template, locale = @locale,
+           honoree = @honoree, partner = @partner, event_date = @event_date,
+           event_time = @event_time, venue_name = @venue_name,
+           venue_map_url = @venue_map_url, greeting = @greeting
+       WHERE slug = @slug`,
+    )
+    .run({ slug, ...clean });
+  return info.changes > 0;
+}
+
 export function getInvite(slug: string): InviteRecord | null {
   const row = db().prepare("SELECT * FROM invites WHERE slug = ?").get(slug) as
     | (Omit<InviteRecord, "event_type" | "template" | "locale"> & {
@@ -123,18 +163,47 @@ export function getInvite(slug: string): InviteRecord | null {
 
 export function addRsvp(
   slug: string,
-  data: { guest_name: string; attendance: Attendance; guests_count: number },
+  data: {
+    guest_name: string;
+    attendance: Attendance;
+    guests_count: number;
+    wish: string | null;
+    guest_ref: string | null;
+  },
 ): boolean {
   const conn = db();
-  const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
-  if (!exists) return false;
-  conn
-    .prepare(
-      `INSERT INTO rsvps (invite_slug, guest_name, attendance, guests_count)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .run(slug, data.guest_name, data.attendance, data.guests_count);
-  return true;
+  const upsert = conn.transaction((): boolean => {
+    const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
+    if (!exists) return false;
+    // The same browser answering again (typo fix, changed mind) updates its own
+    // row — otherwise every re-submit inflates the organizer's headcount. The
+    // key is an opaque client id, NOT the typed name: a name is display data
+    // and must never authorize overwriting someone else's answer.
+    const prior = data.guest_ref
+      ? (conn
+          .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_ref = ?")
+          .get(slug, data.guest_ref) as { id: number } | undefined)
+      : undefined;
+    if (prior) {
+      conn
+        .prepare(
+          `UPDATE rsvps
+           SET guest_name = ?, attendance = ?, guests_count = ?, wish = ?,
+               created_at = datetime('now')
+           WHERE id = ?`,
+        )
+        .run(data.guest_name, data.attendance, data.guests_count, data.wish, prior.id);
+    } else {
+      conn
+        .prepare(
+          `INSERT INTO rsvps (invite_slug, guest_name, guest_ref, attendance, guests_count, wish)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+        )
+        .run(slug, data.guest_name, data.guest_ref, data.attendance, data.guests_count, data.wish);
+    }
+    return true;
+  });
+  return upsert();
 }
 
 export function listRsvps(slug: string): RsvpRecord[] {

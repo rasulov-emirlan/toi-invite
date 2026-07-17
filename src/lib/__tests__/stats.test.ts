@@ -9,6 +9,8 @@ function row(partial: Partial<RsvpRecord>): RsvpRecord {
     guest_name: "Guest",
     attendance: "yes",
     guests_count: 1,
+    wish: null,
+    guest_ref: null,
     created_at: "2026-07-07 00:00:00",
     ...partial,
   };

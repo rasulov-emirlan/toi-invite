@@ -2,21 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { translator } from "@/lib/i18n";
+import { getGuestRef } from "@/lib/guest-ref";
 import type { Attendance, Locale } from "@/lib/types";
 
 export default function RsvpForm({
   slug,
   locale,
   initialName = "",
+  demo = false,
 }: {
   slug: string;
   locale: Locale;
   initialName?: string;
+  /** Demo mode (the /demo sample): simulate success locally, send nothing. */
+  demo?: boolean;
 }) {
   const tr = translator(locale);
   const [name, setName] = useState(initialName);
   const [attendance, setAttendance] = useState<Attendance | null>(null);
   const [guests, setGuests] = useState(1);
+  const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cooldownSec, setCooldownSec] = useState(0);
@@ -32,6 +37,10 @@ export default function RsvpForm({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!attendance || cooldownSec > 0) return;
+    if (demo) {
+      setDone(attendance);
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
@@ -43,6 +52,8 @@ export default function RsvpForm({
           guest_name: name,
           attendance,
           guests_count: attendance === "yes" ? guests : 1,
+          wish,
+          guest_ref: getGuestRef(),
         }),
       });
       if (res.status === 429) {
@@ -69,7 +80,7 @@ export default function RsvpForm({
   if (done) {
     return (
       <div className="rsvp">
-        <div className="thanks">
+        <div className="thanks" role="status">
           {done === "yes" ? tr("invite.rsvp_thanks_yes") : tr("invite.rsvp_thanks_no")}
         </div>
       </div>
@@ -90,6 +101,7 @@ export default function RsvpForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
+            autoComplete="name"
             required
           />
         </div>
@@ -128,7 +140,24 @@ export default function RsvpForm({
           </div>
         )}
 
-        {error && <div className="alert">{error}</div>}
+        {attendance !== null && (
+          <div className="field">
+            <label htmlFor="g-wish">{tr("invite.rsvp_wish")}</label>
+            <textarea
+              id="g-wish"
+              value={wish}
+              maxLength={300}
+              placeholder={tr("invite.rsvp_wish_ph")}
+              onChange={(e) => setWish(e.target.value)}
+            />
+          </div>
+        )}
+
+        {error && (
+          <div className="alert" role="alert">
+            {error}
+          </div>
+        )}
 
         <button
           type="submit"

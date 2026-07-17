@@ -29,12 +29,17 @@ export interface InviteRecord {
   created_at: string;
 }
 
+/** What the invite card needs to render — no organizer secrets. */
+export type InviteDisplay = Omit<InviteRecord, "organizer_token" | "created_at">;
+
 export interface RsvpRecord {
   id: number;
   invite_slug: string;
   guest_name: string;
   attendance: Attendance;
   guests_count: number;
+  wish: string | null;
+  guest_ref: string | null;
   created_at: string;
 }
 
@@ -56,6 +61,8 @@ export interface RsvpInput {
   guest_name: string;
   attendance: string;
   guests_count: number | string;
+  wish?: string | null;
+  guest_ref?: string | null;
 }
 
 /** Shape accepted by the premium-interest endpoint (before validation). */

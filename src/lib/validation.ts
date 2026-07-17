@@ -22,6 +22,7 @@ export const LIMITS = {
   guestName: 80,
   mapUrl: 500,
   maxGuests: 50,
+  wish: 300,
 } as const;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -66,7 +67,14 @@ export interface CleanInvite {
   greeting: string;
 }
 
+/** Guard for JSON bodies that parse fine but aren't usable objects (null, arrays, primitives). */
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return v != null && typeof v === "object" && !Array.isArray(v);
+}
+
 export function validateInvite(input: InviteInput): ValidationResult<CleanInvite> {
+  if (!isRecord(input)) return { ok: false, errors: ["body"] };
+
   const errors: string[] = [];
 
   if (!isEventType(input.event_type)) errors.push("event_type");
@@ -122,13 +130,24 @@ export interface CleanRsvp {
   guest_name: string;
   attendance: Attendance;
   guests_count: number;
+  wish: string | null;
+  guest_ref: string | null;
 }
+
+/**
+ * Opaque per-browser id used only to fold a guest's repeat submissions into one
+ * row. Lenient: a malformed value degrades to "no id" (plain insert) rather
+ * than rejecting the RSVP.
+ */
+const GUEST_REF_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 function isAttendance(v: unknown): v is Attendance {
   return v === "yes" || v === "no";
 }
 
 export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
+  if (!isRecord(input)) return { ok: false, errors: ["body"] };
+
   const errors: string[] = [];
 
   const guest_name = str(input.guest_name);
@@ -142,6 +161,13 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
       : Number(String(input.guests_count).trim());
   if (!Number.isInteger(n) || n < 1 || n > LIMITS.maxGuests) errors.push("guests_count");
 
+  const wishRaw = str(input.wish);
+  if (wishRaw.length > LIMITS.wish) errors.push("wish");
+  const wish = wishRaw.length > 0 ? wishRaw : null;
+
+  const refRaw = str(input.guest_ref);
+  const guest_ref = GUEST_REF_RE.test(refRaw) ? refRaw : null;
+
   if (errors.length > 0) return { ok: false, errors };
 
   return {
@@ -150,6 +176,8 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
       guest_name,
       attendance: input.attendance as Attendance,
       guests_count: n,
+      wish,
+      guest_ref,
     },
   };
 }

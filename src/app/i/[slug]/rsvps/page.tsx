@@ -8,6 +8,7 @@ import { formatKgTimestamp } from "@/lib/calendar";
 import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
 import PersonalLinkGenerator from "./PersonalLinkGenerator";
+import ShareBar from "./ShareBar";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -70,6 +71,8 @@ export default async function RsvpsPage({
           </p>
         </div>
 
+        <ShareBar slug={slug} token={token as string} locale={locale} />
+
         <div className="statgrid">
           <div className="stat">
             <div className="stat__num">{stats.responses}</div>
@@ -118,7 +121,10 @@ export default async function RsvpsPage({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.guest_name}</td>
+                    <td>
+                      {row.guest_name}
+                      {row.wish && <span className="rsvp-wish">«{row.wish}»</span>}
+                    </td>
                     <td>
                       <span className={`pill pill--${row.attendance}`}>
                         {row.attendance === "yes"

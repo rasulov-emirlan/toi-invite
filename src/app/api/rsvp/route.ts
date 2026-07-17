@@ -33,6 +33,10 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
+  // JSON `null`/arrays/primitives parse fine but aren't a usable body.
+  if (body == null || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
+  }
 
   if (!isValidSlug(body.slug)) {
     return NextResponse.json({ error: "bad slug" }, { status: 400 });
