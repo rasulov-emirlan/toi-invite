@@ -111,3 +111,6 @@ export const premiumInterestLimiter = new TokenBucketLimiter(10, 1 / 30);
 // Edits get their own bucket: invalid-token PATCH floods must not exhaust the
 // create limiter for legitimate organizers behind the same CGNAT IP.
 export const inviteEditLimiter = new TokenBucketLimiter(30, 1 / 5);
+
+// Gift claims per (slug, ip) — a family browsing together shares a carrier IP.
+export const giftClaimLimiter = new TokenBucketLimiter(30, 1 / 2);

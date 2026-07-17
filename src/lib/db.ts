@@ -5,6 +5,7 @@ import { dirname, resolve } from "node:path";
 import type {
   Attendance,
   EventTypeKey,
+  GiftRecord,
   InviteRecord,
   Locale,
   RsvpRecord,
@@ -50,6 +51,16 @@ function db(): Database.Database {
       created_at   TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_rsvps_slug ON rsvps(invite_slug);
+    CREATE TABLE IF NOT EXISTS gifts (
+      id           INTEGER PRIMARY KEY AUTOINCREMENT,
+      invite_slug  TEXT NOT NULL REFERENCES invites(slug) ON DELETE CASCADE,
+      title        TEXT NOT NULL,
+      claimed_ref  TEXT,
+      claimed_name TEXT,
+      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      claimed_at   TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_gifts_slug ON gifts(invite_slug);
     CREATE TABLE IF NOT EXISTS premium_interest (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       tier       TEXT NOT NULL,
@@ -212,6 +223,92 @@ export function listRsvps(slug: string): RsvpRecord[] {
       "SELECT * FROM rsvps WHERE invite_slug = ? ORDER BY created_at DESC, id DESC",
     )
     .all(slug) as RsvpRecord[];
+}
+
+// ---------- gift wishlist ----------
+
+export function listGifts(slug: string): GiftRecord[] {
+  return db()
+    .prepare("SELECT * FROM gifts WHERE invite_slug = ? ORDER BY id")
+    .all(slug) as GiftRecord[];
+}
+
+const MAX_GIFTS_PER_INVITE = 50;
+
+/** Organizer adds an item. Returns the new id, or null when the invite is
+ *  missing or the list is full. */
+export function addGift(slug: string, title: string): number | null {
+  const conn = db();
+  const insert = conn.transaction((): number | null => {
+    const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
+    if (!exists) return null;
+    const { c } = conn
+      .prepare("SELECT COUNT(*) c FROM gifts WHERE invite_slug = ?")
+      .get(slug) as { c: number };
+    if (c >= MAX_GIFTS_PER_INVITE) return null;
+    const info = conn
+      .prepare("INSERT INTO gifts (invite_slug, title) VALUES (?, ?)")
+      .run(slug, title);
+    return Number(info.lastInsertRowid);
+  });
+  return insert();
+}
+
+export function deleteGift(slug: string, id: number): boolean {
+  const info = db()
+    .prepare("DELETE FROM gifts WHERE id = ? AND invite_slug = ?")
+    .run(id, slug);
+  return info.changes > 0;
+}
+
+export type ClaimResult = "claimed" | "taken" | "not_found";
+
+/** Guest reserves an item — atomic, first tap wins. */
+export function claimGift(
+  slug: string,
+  id: number,
+  guestRef: string,
+  guestName: string | null,
+): ClaimResult {
+  const conn = db();
+  const info = conn
+    .prepare(
+      `UPDATE gifts
+       SET claimed_ref = ?, claimed_name = ?, claimed_at = datetime('now')
+       WHERE id = ? AND invite_slug = ? AND claimed_ref IS NULL`,
+    )
+    .run(guestRef, guestName, id, slug);
+  if (info.changes > 0) return "claimed";
+  const row = conn
+    .prepare("SELECT claimed_ref FROM gifts WHERE id = ? AND invite_slug = ?")
+    .get(id, slug) as { claimed_ref: string | null } | undefined;
+  if (!row) return "not_found";
+  // Tapping your own reserved item again is a no-op success, not a conflict.
+  return row.claimed_ref === guestRef ? "claimed" : "taken";
+}
+
+/** Guest releases their own reservation; the organizer (byOrganizer) can free any. */
+export function unclaimGift(
+  slug: string,
+  id: number,
+  guestRef: string | null,
+  byOrganizer: boolean,
+): boolean {
+  const conn = db();
+  const info = byOrganizer
+    ? conn
+        .prepare(
+          `UPDATE gifts SET claimed_ref = NULL, claimed_name = NULL, claimed_at = NULL
+           WHERE id = ? AND invite_slug = ?`,
+        )
+        .run(id, slug)
+    : conn
+        .prepare(
+          `UPDATE gifts SET claimed_ref = NULL, claimed_name = NULL, claimed_at = NULL
+           WHERE id = ? AND invite_slug = ? AND claimed_ref = ?`,
+        )
+        .run(id, slug, guestRef);
+  return info.changes > 0;
 }
 
 /** Record a premium-tier interest lead (the payment fake-door). Returns the row id. */

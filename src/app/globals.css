@@ -830,6 +830,158 @@ a {
   padding: 1.5rem 0;
 }
 
+/* gift wishlist on the invite */
+.gifts {
+  margin-top: 2.5rem;
+  border-top: 2px solid var(--ac);
+  padding-top: 2rem;
+}
+
+.gifts h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  text-align: center;
+  color: var(--tink);
+  margin-bottom: 0.5rem;
+}
+
+.gifts__hint {
+  text-align: center;
+  color: var(--tmuted);
+  font-size: 0.88rem;
+  max-width: 40ch;
+  margin: 0 auto 1.25rem;
+}
+
+.gifts__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.gifts__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--soft);
+  background: var(--tsurface);
+}
+
+.gifts__item--taken {
+  opacity: 0.6;
+}
+
+.gifts__title {
+  font-size: 1rem;
+  color: var(--tink);
+}
+
+.gifts__taken {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tmuted);
+  white-space: nowrap;
+}
+
+.gifts__item .btn-ac {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.gifts__note {
+  text-align: center;
+  color: var(--tmuted);
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0;
+}
+
+@media (max-width: 380px) {
+  .gifts__item {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+/* organizer gift editor (dashboard) */
+.giftadd {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 36rem;
+  margin-top: 1rem;
+}
+
+.giftadd input {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  min-width: 0;
+}
+
+.giftadd input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.giftrows {
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+  max-width: 36rem;
+}
+
+.giftrows li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.giftrows__title {
+  min-width: 0;
+}
+
+.giftrows__claimed {
+  display: block;
+  font-size: 0.82rem;
+  color: #1f7a54;
+}
+
+.giftrows__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.giftrows__actions button {
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  color: var(--gray-800);
+}
+
+.giftrows__actions button:hover {
+  border-color: var(--ink);
+}
+
 .invite__foot {
   text-align: center;
   padding: 1.5rem;

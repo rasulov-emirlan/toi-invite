@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getInvite, listRsvps } from "@/lib/db";
+import { getInvite, listGifts, listRsvps } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { translator } from "@/lib/i18n";
 import { computeRsvpStats } from "@/lib/stats";
@@ -9,6 +9,7 @@ import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
 import PersonalLinkGenerator from "./PersonalLinkGenerator";
 import ShareBar from "./ShareBar";
+import GiftManager from "./GiftManager";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -140,6 +141,13 @@ export default async function RsvpsPage({
             </table>
           </div>
         )}
+
+        <GiftManager
+          slug={slug}
+          token={token as string}
+          locale={locale}
+          initial={listGifts(slug)}
+        />
 
         <PersonalLinkGenerator slug={slug} locale={locale} />
       </main>
