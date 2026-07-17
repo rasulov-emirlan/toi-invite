@@ -28,6 +28,7 @@ export default function InviteCard({
   slug,
   guestName,
   shareBase,
+  giftsSlot,
 }: {
   invite: InviteDisplay;
   locale: Locale;
@@ -36,6 +37,8 @@ export default function InviteCard({
   slug?: string;
   guestName?: string;
   shareBase?: string;
+  /** Optional gift-wishlist block, rendered between countdown and RSVP. */
+  giftsSlot?: React.ReactNode;
 }) {
   const tr = translator(locale);
   const tpl = getTemplate(invite.template);
@@ -122,6 +125,8 @@ export default function InviteCard({
         </div>
 
         {mode !== "preview" && <Countdown targetMs={start.getTime()} locale={locale} />}
+
+        {giftsSlot}
 
         {mode === "preview" ? (
           <RsvpStub locale={locale} />

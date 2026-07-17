@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getInvite } from "@/lib/db";
+import { getInvite, listGifts } from "@/lib/db";
+import { toGuestGifts } from "@/lib/gifts";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
 import { isLocale, translator } from "@/lib/i18n";
@@ -8,6 +9,7 @@ import { getTemplate } from "@/lib/templates";
 import { inviteTitle, ogDescription } from "@/lib/invite-view";
 import type { Locale } from "@/lib/types";
 import InviteCard from "@/components/InviteCard";
+import GiftList from "@/components/GiftList";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +77,9 @@ export default async function InvitePage({
   // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
   // relative.
   const shareBase = process.env.APP_BASE_URL ?? "http://localhost:3000";
+  // "yours" is per-browser; the server always renders false and the client
+  // recovers its own reservations after mount.
+  const gifts = toGuestGifts(listGifts(slug), null);
 
   const paletteStyle = {
     ["--ac" as string]: tpl.palette.accent,
@@ -101,6 +106,11 @@ export default async function InvitePage({
           slug={slug}
           guestName={guestName || undefined}
           shareBase={shareBase}
+          giftsSlot={
+            gifts.length > 0 ? (
+              <GiftList slug={slug} locale={locale} initial={gifts} />
+            ) : undefined
+          }
         />
       </div>
     </div>

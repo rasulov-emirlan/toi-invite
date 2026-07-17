@@ -43,6 +43,25 @@ export interface RsvpRecord {
   created_at: string;
 }
 
+export interface GiftRecord {
+  id: number;
+  invite_slug: string;
+  title: string;
+  claimed_ref: string | null;
+  claimed_name: string | null;
+  created_at: string;
+  claimed_at: string | null;
+}
+
+/** What a guest may see: taken yes/no and whether it's their own reservation —
+ *  never who claimed (that's the organizer's view) and never the claim ref. */
+export interface GuestGift {
+  id: number;
+  title: string;
+  taken: boolean;
+  yours: boolean;
+}
+
 /** Shape accepted by the create endpoint (before validation). */
 export interface InviteInput {
   event_type: string;

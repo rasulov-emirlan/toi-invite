@@ -5,6 +5,7 @@ import { getTemplate, paletteVars } from "@/lib/templates";
 import { getEventType } from "@/lib/events";
 import type { InviteDisplay, Locale } from "@/lib/types";
 import InviteCard from "@/components/InviteCard";
+import GiftList from "@/components/GiftList";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,33 @@ export default async function DemoPage({
       </div>
 
       <div className="invite__inner">
-        <InviteCard invite={invite} locale={locale} mode="demo" />
+        <InviteCard
+          invite={invite}
+          locale={locale}
+          mode="demo"
+          giftsSlot={
+            <GiftList
+              slug="demo"
+              locale={locale}
+              demo
+              initial={[
+                {
+                  id: 1,
+                  title: locale === "ky" ? "Чай сервизи" : "Чайный сервиз",
+                  taken: false,
+                  yours: false,
+                },
+                { id: 2, title: "Самовар", taken: true, yours: false },
+                {
+                  id: 3,
+                  title: locale === "ky" ? "Жууркан-төшөк комплекти" : "Комплект постельного белья",
+                  taken: false,
+                  yours: false,
+                },
+              ]}
+            />
+          }
+        />
       </div>
     </div>
   );
