@@ -107,3 +107,7 @@ export const inviteLimiter = new TokenBucketLimiter(20, 1 / 30);
 // Premium-interest leads: per-IP, 10 burst / ~1 per 30s — a real prospect submits
 // once or twice; this bounds junk without throttling legitimate interest.
 export const premiumInterestLimiter = new TokenBucketLimiter(10, 1 / 30);
+
+// Edits get their own bucket: invalid-token PATCH floods must not exhaust the
+// create limiter for legitimate organizers behind the same CGNAT IP.
+export const inviteEditLimiter = new TokenBucketLimiter(30, 1 / 5);

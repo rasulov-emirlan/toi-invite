@@ -3,7 +3,7 @@ import { validateInvite } from "@/lib/validation";
 import { getInvite, updateInvite } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { tokensMatch } from "@/lib/token";
-import { clientKey, inviteLimiter } from "@/lib/ratelimit";
+import { clientKey, inviteEditLimiter } from "@/lib/ratelimit";
 import type { InviteInput } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
-  const rl = inviteLimiter.check(clientKey(req, "invite"), Date.now());
+  const rl = inviteEditLimiter.check(clientKey(req, "invite-edit"), Date.now());
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "rate_limited" },
@@ -35,6 +35,10 @@ export async function PATCH(
     body = (await req.json()) as Body;
   } catch {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
+  }
+  // JSON `null`/arrays/primitives parse fine but aren't a usable body.
+  if (body == null || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
   // Same constant-time gate as the organizer dashboard: wrong token learns

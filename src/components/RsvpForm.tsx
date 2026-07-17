@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { translator } from "@/lib/i18n";
+import { getGuestRef } from "@/lib/guest-ref";
 import type { Attendance, Locale } from "@/lib/types";
 
 export default function RsvpForm({
@@ -52,6 +53,7 @@ export default function RsvpForm({
           attendance,
           guests_count: attendance === "yes" ? guests : 1,
           wish,
+          guest_ref: getGuestRef(),
         }),
       });
       if (res.status === 429) {

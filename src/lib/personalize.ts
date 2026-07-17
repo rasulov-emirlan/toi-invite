@@ -22,15 +22,6 @@ export function sanitizeGuestName(raw: unknown): string {
 }
 
 /**
- * Case-insensitive identity key for a guest name, used to fold repeat RSVPs from
- * the same guest into one row. JS-side because SQLite's lower() is ASCII-only
- * and most guest names are Cyrillic.
- */
-export function guestNameKey(name: string): string {
-  return name.replace(/\s+/g, " ").trim().toLowerCase();
-}
-
-/**
  * Build a per-guest personalized invite link. `origin` is the public origin
  * (e.g. https://toi.night.enkiduck.com). Falls back to the plain invite URL when
  * the name is empty after sanitization.

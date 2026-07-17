@@ -39,6 +39,7 @@ export interface RsvpRecord {
   attendance: Attendance;
   guests_count: number;
   wish: string | null;
+  guest_ref: string | null;
   created_at: string;
 }
 
@@ -61,6 +62,7 @@ export interface RsvpInput {
   attendance: string;
   guests_count: number | string;
   wish?: string | null;
+  guest_ref?: string | null;
 }
 
 /** Shape accepted by the premium-interest endpoint (before validation). */

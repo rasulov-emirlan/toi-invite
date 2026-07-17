@@ -58,6 +58,7 @@ export default function CreateForm({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [saved, setSaved] = useState(false);
+  const [savedLocally, setSavedLocally] = useState(false);
 
   const tr = useMemo(() => translator(uiLocale), [uiLocale]);
   const evConfig = getEventType(eventType);
@@ -106,19 +107,28 @@ export default function CreateForm({
         setSubmitting(false);
         return;
       }
+      const inv = previewInvite();
+      const title = `${eventLabel(inv, uiLocale)} · ${displayNames(inv, uiLocale)}`;
       if (edit) {
+        // Refresh (or adopt, when editing from another browser) the local entry.
+        rememberInvite({
+          slug: edit.slug,
+          token: edit.token,
+          title,
+          createdAt: new Date().toISOString(),
+        });
         setSaved(true);
         setSubmitting(false);
         return;
       }
       const data = (await res.json()) as Result;
-      const inv = previewInvite();
-      rememberInvite({
+      const stored = rememberInvite({
         slug: data.slug,
         token: data.token,
-        title: `${eventLabel(inv, uiLocale)} · ${displayNames(inv, uiLocale)}`,
+        title,
         createdAt: new Date().toISOString(),
       });
+      setSavedLocally(stored);
       setResult(data);
     } catch {
       setError(tr("create.error_generic"));
@@ -144,7 +154,14 @@ export default function CreateForm({
   }
 
   if (result) {
-    return <SuccessPanel locale={uiLocale} result={result} onReset={resetAll} />;
+    return (
+      <SuccessPanel
+        locale={uiLocale}
+        result={result}
+        savedLocally={savedLocally}
+        onReset={resetAll}
+      />
+    );
   }
 
   function resetAll() {
@@ -235,7 +252,9 @@ export default function CreateForm({
               id="date"
               type="date"
               value={date}
-              min={today}
+              // Only creation is future-only: an existing past-dated invite must
+              // stay editable (venue/greeting fixes) without a date-range trap.
+              min={edit ? undefined : today}
               onChange={(e) => setDate(e.target.value)}
               required
             />
@@ -370,10 +389,12 @@ function LivePreview({ uiLocale, invite }: { uiLocale: Locale; invite: InviteDis
 function SuccessPanel({
   locale,
   result,
+  savedLocally,
   onReset,
 }: {
   locale: Locale;
   result: Result;
+  savedLocally: boolean;
   onReset: () => void;
 }) {
   const tr = translator(locale);
@@ -390,9 +411,11 @@ function SuccessPanel({
         <h2 style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>
           {tr("create.success_title")}
         </h2>
-        <p className="hint" style={{ marginTop: "0.5rem" }}>
-          {tr("create.success_saved_hint")}
-        </p>
+        {savedLocally && (
+          <p className="hint" style={{ marginTop: "0.5rem" }}>
+            {tr("create.success_saved_hint")}
+          </p>
+        )}
       </div>
 
       <CopyLink label={tr("create.success_public_label")} value={publicUrl} locale={locale} />

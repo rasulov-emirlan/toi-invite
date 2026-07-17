@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_GUEST_NAME, guestNameKey, personalLink, sanitizeGuestName } from "../personalize";
+import { MAX_GUEST_NAME, personalLink, sanitizeGuestName } from "../personalize";
 
 describe("sanitizeGuestName", () => {
   it("keeps normal Cyrillic names with spaces and punctuation", () => {
@@ -51,20 +51,5 @@ describe("personalLink", () => {
 
   it("falls back to the plain invite URL when the name sanitizes to empty", () => {
     expect(personalLink("https://x", "abcd2345", "  <> ")).toBe("https://x/i/abcd2345");
-  });
-});
-
-describe("guestNameKey", () => {
-  it("folds case, including Cyrillic", () => {
-    expect(guestNameKey("Айбек")).toBe(guestNameKey("айбек"));
-    expect(guestNameKey("НУРГҮЛ ЭЖЕ")).toBe(guestNameKey("нургүл эже"));
-  });
-
-  it("collapses and trims whitespace", () => {
-    expect(guestNameKey("  Айбек   байке ")).toBe("айбек байке");
-  });
-
-  it("distinguishes genuinely different names", () => {
-    expect(guestNameKey("Айбек")).not.toBe(guestNameKey("Айбек байке"));
   });
 });

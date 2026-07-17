@@ -13,7 +13,6 @@ import type {
 import type { CleanInvite } from "./validation";
 import type { CleanPremiumInterest } from "./premium";
 import { generateSlug, generateToken } from "./slug";
-import { guestNameKey } from "./personalize";
 
 const DB_PATH = resolve(process.env.DB_PATH ?? "./data/toi.db");
 
@@ -69,8 +68,10 @@ function db(): Database.Database {
 /**
  * Additive rsvps migrations for databases created before these columns existed:
  *  - wish: optional congratulation text from the guest.
- *  - guest_key: JS-normalized guest_name (SQLite lower() is ASCII-only), so a
- *    guest re-submitting updates their row instead of double-counting.
+ *  - guest_ref: opaque per-browser id, so the same guest re-submitting updates
+ *    their row instead of double-counting — without letting anyone overwrite a
+ *    stranger's answer by typing the same name. Legacy rows keep NULL (each was
+ *    a distinct submission; the unique index ignores NULLs).
  */
 function migrateRsvps(handle: Database.Database) {
   const cols = new Set(
@@ -79,19 +80,12 @@ function migrateRsvps(handle: Database.Database) {
   if (!cols.has("wish")) {
     handle.exec("ALTER TABLE rsvps ADD COLUMN wish TEXT");
   }
-  if (!cols.has("guest_key")) {
-    handle.exec("ALTER TABLE rsvps ADD COLUMN guest_key TEXT");
-    const rows = handle
-      .prepare("SELECT id, guest_name FROM rsvps")
-      .all() as Array<{ id: number; guest_name: string }>;
-    const backfill = handle.prepare("UPDATE rsvps SET guest_key = ? WHERE id = ?");
-    const run = handle.transaction(() => {
-      for (const r of rows) backfill.run(guestNameKey(r.guest_name), r.id);
-    });
-    run();
+  if (!cols.has("guest_ref")) {
+    handle.exec("ALTER TABLE rsvps ADD COLUMN guest_ref TEXT");
   }
   handle.exec(
-    "CREATE INDEX IF NOT EXISTS idx_rsvps_slug_key ON rsvps(invite_slug, guest_key)",
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_rsvps_slug_ref
+     ON rsvps(invite_slug, guest_ref) WHERE guest_ref IS NOT NULL`,
   );
 }
 
@@ -169,24 +163,32 @@ export function getInvite(slug: string): InviteRecord | null {
 
 export function addRsvp(
   slug: string,
-  data: { guest_name: string; attendance: Attendance; guests_count: number; wish: string | null },
+  data: {
+    guest_name: string;
+    attendance: Attendance;
+    guests_count: number;
+    wish: string | null;
+    guest_ref: string | null;
+  },
 ): boolean {
   const conn = db();
   const upsert = conn.transaction((): boolean => {
     const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
     if (!exists) return false;
-    const key = guestNameKey(data.guest_name);
-    // Same guest answering again (typo fix, changed mind) updates their row —
-    // otherwise every re-submit inflates the organizer's headcount.
-    const prior = conn
-      .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_key = ? ORDER BY id DESC LIMIT 1")
-      .get(slug, key) as { id: number } | undefined;
+    // The same browser answering again (typo fix, changed mind) updates its own
+    // row — otherwise every re-submit inflates the organizer's headcount. The
+    // key is an opaque client id, NOT the typed name: a name is display data
+    // and must never authorize overwriting someone else's answer.
+    const prior = data.guest_ref
+      ? (conn
+          .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_ref = ?")
+          .get(slug, data.guest_ref) as { id: number } | undefined)
+      : undefined;
     if (prior) {
       conn
         .prepare(
           `UPDATE rsvps
-           SET guest_name = ?, attendance = ?, guests_count = ?,
-               wish = COALESCE(?, wish),
+           SET guest_name = ?, attendance = ?, guests_count = ?, wish = ?,
                created_at = datetime('now')
            WHERE id = ?`,
         )
@@ -194,10 +196,10 @@ export function addRsvp(
     } else {
       conn
         .prepare(
-          `INSERT INTO rsvps (invite_slug, guest_name, guest_key, attendance, guests_count, wish)
+          `INSERT INTO rsvps (invite_slug, guest_name, guest_ref, attendance, guests_count, wish)
            VALUES (?, ?, ?, ?, ?, ?)`,
         )
-        .run(slug, data.guest_name, key, data.attendance, data.guests_count, data.wish);
+        .run(slug, data.guest_name, data.guest_ref, data.attendance, data.guests_count, data.wish);
     }
     return true;
   });

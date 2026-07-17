@@ -35,12 +35,15 @@ export function listMyInvites(): MyInvite[] {
   }
 }
 
-export function rememberInvite(entry: MyInvite): void {
+/** Returns whether the entry was actually persisted — callers must not claim
+ *  "saved in this browser" when storage is blocked (private WebViews). */
+export function rememberInvite(entry: MyInvite): boolean {
   try {
     const rest = listMyInvites().filter((x) => x.slug !== entry.slug);
     const next = [entry, ...rest].slice(0, MAX);
     window.localStorage.setItem(KEY, JSON.stringify(next));
+    return window.localStorage.getItem(KEY) !== null;
   } catch {
-    /* storage unavailable — the success panel still shows the links */
+    return false;
   }
 }

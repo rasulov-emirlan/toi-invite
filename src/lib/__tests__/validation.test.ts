@@ -169,3 +169,29 @@ describe("validateRsvp wish", () => {
     if (!r.ok) expect(r.errors).toContain("wish");
   });
 });
+
+describe("validateRsvp guest_ref", () => {
+  const base = { guest_name: "Айбек", attendance: "yes", guests_count: 2 };
+
+  it("accepts a uuid-shaped ref and nulls junk without rejecting the RSVP", () => {
+    const good = validateRsvp({ ...base, guest_ref: "3f2c9a10-1b2c-4d5e-8f90-abcdef123456" });
+    expect(good.ok && good.value.guest_ref).toBe("3f2c9a10-1b2c-4d5e-8f90-abcdef123456");
+    const junk = validateRsvp({ ...base, guest_ref: "<script>" });
+    expect(junk.ok && junk.value.guest_ref).toBe(null);
+    const tooShort = validateRsvp({ ...base, guest_ref: "abc" });
+    expect(tooShort.ok && tooShort.value.guest_ref).toBe(null);
+    const missing = validateRsvp(base);
+    expect(missing.ok && missing.value.guest_ref).toBe(null);
+  });
+});
+
+describe("null/array bodies", () => {
+  it("rejects non-object bodies cleanly instead of throwing", () => {
+    for (const bad of [null, undefined, [], "x", 42]) {
+      const r1 = validateRsvp(bad as unknown as RsvpInput);
+      expect(r1.ok).toBe(false);
+      const r2 = validateInvite(bad as unknown as InviteInput);
+      expect(r2.ok).toBe(false);
+    }
+  });
+});
