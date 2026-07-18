@@ -33,13 +33,17 @@ RSVPs persist to `./data/toi.db` (override with `DB_PATH`).
 
 | Route | What |
 |---|---|
-| `/` | Landing (RU/KY toggle via `?lang=`) |
-| `/create` | The builder: event type, names, date/time, venue + 2GIS, greeting, template, invite language |
-| `/i/<slug>` | Public invite: template art, countdown, details, add-to-calendar, RSVP form. Rich OG/Twitter meta so the link unfurls in WhatsApp/Telegram |
-| `/i/<slug>/rsvps?token=<secret>` | Organizer view: coming / not-coming / total-guests + the guest list. Token-gated |
-| `POST /api/invites` | Create an invite → `{ slug, token }` |
-| `POST /api/rsvp` | Submit a guest RSVP |
+| `/` | Landing (RU/KY toggle via `?lang=`) + server-side «Мои приглашения» (HttpOnly organizer cookie) |
+| `/create` | The builder: event type, names, date/time, venue + 2GIS (link auto-normalized), bilingual RU+KY greeting tabs, photo upload, host contact, landmark, dress code, RSVP deadline, programme, 6 templates (classic + Kyrgyz oimo ornament) |
+| `/i/<slug>` | Public invite: template art, optional hero photo, countdown, details, programme, host WhatsApp/call, add-to-calendar, RSVP form. Per-invite **dynamic OG card** (names/date rendered into the image) so the link unfurls personalized in WhatsApp/Telegram |
+| `/i/<slug>/rsvps?token=<secret>` | Organizer view: stats, RSVP list (mobile card layout), gift wishlist, **guest board** (invited / opened / coming / declined + personal links + WhatsApp reminders) |
+| `/admin/stats?token=<ADMIN_TOKEN>` | Operator product stats: funnel events, viral-loop attribution, top invites |
+| `POST /api/invites` | Create an invite → `{ slug, token }`; sets the organizer cookie |
+| `POST /api/rsvp` | Submit a guest RSVP (dedupe by browser ref, links to guest board via `?g=`) |
+| `POST /api/photo` / `GET /api/photo/<id>` | Hero-photo upload (re-encoded via sharp) / serving |
+| `GET /api/og/<slug>` | Dynamic 1200×630 OG card (satori → JPEG) |
 | `GET /api/ics/<slug>` | Download an `.ics` calendar file |
+| `POST /api/track` | First-party analytics beacon (share/calendar/create-own clicks) |
 
 ## Localization
 
@@ -65,7 +69,8 @@ willingness-to-pay before wiring mbank/FreedomPay. With `ADMIN_TOKEN` set, view
 leads at `/premium/leads?token=<ADMIN_TOKEN>` and download CSV at
 `/api/premium-leads?token=<ADMIN_TOKEN>`.
 
-## Not built yet (v0)
+## Not built yet
 
-Real payment capture (mbank / FreedomPay), photo upload, more templates,
+Real payment capture (mbank / FreedomPay), phone/WhatsApp login (organizer
+identity is cookie+localStorage today), per-event-type art variants,
 tamada/decorator partner referral cut. See `~/.nightshift/state/toi-invite.md`.
