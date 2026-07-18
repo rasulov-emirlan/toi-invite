@@ -35,10 +35,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const r = await resolve(params, searchParams);
   if (!r) return { title: "Той-Invite" };
-  const { invite, locale } = r;
-  const tpl = getTemplate(invite.template);
+  const { invite, locale, slug } = r;
   const title = inviteTitle(invite, locale);
   const description = ogDescription(invite, locale);
+  // Per-invite OG card (names + date rendered into the image) — this is what
+  // makes the link unfurl look hand-made in WhatsApp instead of a blank frame.
+  const ogUrl = `/api/og/${slug}?lang=${locale}`;
   return {
     title,
     description,
@@ -46,13 +48,13 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      images: [{ url: tpl.ogImage, width: 1200, height: 630, alt: title }],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [tpl.ogImage],
+      images: [ogUrl],
     },
   };
 }
