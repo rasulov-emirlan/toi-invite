@@ -33,7 +33,7 @@ export default function GuestBoard({
   useEffect(() => setOrigin(window.location.origin), []);
 
   function personalUrl(g: GuestBoardRow): string {
-    return `${origin}/i/${slug}?to=${encodeURIComponent(g.name)}&g=${g.id}`;
+    return `${origin}/i/${slug}?to=${encodeURIComponent(g.name)}&g=${g.token}`;
   }
 
   async function op(body: Record<string, unknown>): Promise<boolean> {

@@ -10,7 +10,7 @@ export default function RsvpForm({
   slug,
   locale,
   initialName = "",
-  invitedGuestId,
+  invitedGuest,
   demo = false,
   calendarUrl,
   createOwnHref,
@@ -19,7 +19,7 @@ export default function RsvpForm({
   locale: Locale;
   initialName?: string;
   /** From a personal link — ties the answer to the organizer's guest list. */
-  invitedGuestId?: number;
+  invitedGuest?: string;
   /** Demo mode (the /demo sample): simulate success locally, send nothing. */
   demo?: boolean;
   /** Post-RSVP follow-ups: peak-intent moment right after a guest answers. */
@@ -63,7 +63,7 @@ export default function RsvpForm({
           guests_count: attendance === "yes" ? guests : 1,
           wish,
           guest_ref: getGuestRef(),
-          invited_guest_id: invitedGuestId ?? null,
+          invited_guest: invitedGuest ?? null,
         }),
       });
       if (res.status === 429) {

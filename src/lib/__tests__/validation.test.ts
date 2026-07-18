@@ -277,6 +277,17 @@ describe("validateInvite new fields", () => {
   });
 });
 
+describe("rsvp_deadline bounds", () => {
+  it("rejects a deadline after the event date", () => {
+    const r = validateInvite({ ...goodInvite, rsvp_deadline: "2099-01-01" });
+    expect(!r.ok && r.errors.includes("rsvp_deadline")).toBe(true);
+  });
+  it("accepts a deadline on or before the event date", () => {
+    const r = validateInvite({ ...goodInvite, rsvp_deadline: goodInvite.event_date });
+    expect(r.ok && r.value.rsvp_deadline).toBe(goodInvite.event_date);
+  });
+});
+
 describe("normalizeMapUrl", () => {
   it("prepends https:// to bare share-sheet hosts and leaves full URLs alone", () => {
     expect(normalizeMapUrl("go.2gis.com/abcd")).toBe("https://go.2gis.com/abcd");
@@ -301,16 +312,14 @@ describe("programFromJson", () => {
   });
 });
 
-describe("validateRsvp invited_guest_id", () => {
+describe("validateRsvp invited_guest (personal-link token)", () => {
   const base = { guest_name: "Айбек", attendance: "yes", guests_count: 2 };
-  it("accepts a positive integer and nulls junk without rejecting", () => {
-    const good = validateRsvp({ ...base, invited_guest_id: 7 });
-    expect(good.ok && good.value.invited_guest_id).toBe(7);
-    const s = validateRsvp({ ...base, invited_guest_id: "12" });
-    expect(s.ok && s.value.invited_guest_id).toBe(12);
-    for (const junk of [-1, 0, 1.5, "abc", null, undefined]) {
-      const r = validateRsvp({ ...base, invited_guest_id: junk as never });
-      expect(r.ok && r.value.invited_guest_id).toBe(null);
+  it("accepts a slug-alphabet token and nulls junk without rejecting", () => {
+    const good = validateRsvp({ ...base, invited_guest: "abc234xyz987" });
+    expect(good.ok && good.value.invited_guest_token).toBe("abc234xyz987");
+    for (const junk of ["ab", "UPPER-case!", "../../etc", 7, null, undefined]) {
+      const r = validateRsvp({ ...base, invited_guest: junk as never });
+      expect(r.ok && r.value.invited_guest_token).toBe(null);
     }
   });
 });

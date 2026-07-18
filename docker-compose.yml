@@ -15,6 +15,10 @@ services:
       - "traefik.http.routers.toi-invite.rule=Host(`toi.night.enkiduck.com`)"
       - traefik.http.routers.toi-invite.entrypoints=websecure
       - traefik.http.routers.toi-invite.tls.certresolver=le
+      - traefik.http.routers.toi-invite.middlewares=toi-invite-bodylimit
+      # Hard request-body ceiling at the edge: photo uploads are ≤5MB; chunked
+      # bodies without Content-Length can't bypass the app-level check.
+      - traefik.http.middlewares.toi-invite-bodylimit.buffering.maxRequestBodyBytes=8000000
       - traefik.http.services.toi-invite.loadbalancer.server.port=3000
 
 networks:

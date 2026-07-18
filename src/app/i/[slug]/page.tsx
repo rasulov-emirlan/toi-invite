@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getInvite, listGifts, logEvent, markInvitedGuestOpened } from "@/lib/db";
+import { getInvite, listGifts, logEvent } from "@/lib/db";
+import { GUEST_LINK_TOKEN_RE } from "@/lib/validation";
+import StampOpen from "@/components/StampOpen";
 import { toGuestGifts } from "@/lib/gifts";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
@@ -74,20 +76,16 @@ export default async function InvitePage({
   const sp = await searchParams;
   const guestName = sanitizeGuestName(sp.to);
 
-  // Personal links carry ?g=<invited-guest id>: first open stamps the
-  // organizer's board, and the RSVP form links the answer to that guest.
-  const gRaw = Number(sp.g);
-  const invitedGuestId = Number.isInteger(gRaw) && gRaw > 0 ? gRaw : null;
-  if (invitedGuestId) {
-    markInvitedGuestOpened(slug, invitedGuestId);
-    logEvent("guest_opened", slug);
-  }
+  // Personal links carry ?g=<guest capability token>. The "opened" stamp is
+  // client-side (StampOpen beacon) — WhatsApp/Telegram preview crawlers fetch
+  // these URLs and must not mark a guest as having opened anything.
+  const invitedGuest = GUEST_LINK_TOKEN_RE.test(sp.g ?? "") ? (sp.g as string) : null;
   logEvent("invite_view", slug);
   const tpl = getTemplate(invite.template);
   const other: Locale = locale === "ru" ? "ky" : "ru";
   const toQuery =
     (guestName ? `&to=${encodeURIComponent(guestName)}` : "") +
-    (invitedGuestId ? `&g=${invitedGuestId}` : "");
+    (invitedGuest ? `&g=${invitedGuest}` : "");
   // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
   // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
   // relative.
@@ -113,6 +111,7 @@ export default async function InvitePage({
         </Link>
       </div>
 
+      {invitedGuest && <StampOpen slug={slug} guest={invitedGuest} />}
       <div className="invite__inner">
         <InviteCard
           invite={invite}
@@ -120,7 +119,7 @@ export default async function InvitePage({
           mode="live"
           slug={slug}
           guestName={guestName || undefined}
-          invitedGuestId={invitedGuestId ?? undefined}
+          invitedGuest={invitedGuest ?? undefined}
           shareBase={shareBase}
           giftsSlot={
             gifts.length > 0 ? (

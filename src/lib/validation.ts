@@ -209,7 +209,9 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
   const deadlineRaw = str(input.rsvp_deadline);
   let rsvp_deadline: string | null = null;
   if (deadlineRaw.length > 0) {
-    if (!isRealDate(deadlineRaw)) errors.push("rsvp_deadline");
+    // ISO dates compare correctly as strings; a deadline after the toi itself
+    // is organizer confusion, not a preference.
+    if (!isRealDate(deadlineRaw) || deadlineRaw > event_date) errors.push("rsvp_deadline");
     else rsvp_deadline = deadlineRaw;
   }
 
@@ -266,7 +268,7 @@ export interface CleanRsvp {
   guests_count: number;
   wish: string | null;
   guest_ref: string | null;
-  invited_guest_id: number | null;
+  invited_guest_token: string | null;
 }
 
 /**
@@ -275,6 +277,9 @@ export interface CleanRsvp {
  * than rejecting the RSVP.
  */
 const GUEST_REF_RE = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** Personal-link capability tokens minted by addInvitedGuest (slug alphabet). */
+export const GUEST_LINK_TOKEN_RE = /^[a-z0-9]{6,32}$/;
 
 function isAttendance(v: unknown): v is Attendance {
   return v === "yes" || v === "no";
@@ -305,11 +310,10 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
 
   // Same lenient stance as guest_ref: this only links the RSVP to the
   // organizer's guest list; junk degrades to "not linked".
-  const gidRaw = input.invited_guest_id;
-  const gid =
-    typeof gidRaw === "number" ? gidRaw : Number(String(gidRaw ?? "").trim());
-  const invited_guest_id =
-    Number.isInteger(gid) && gid > 0 && gid <= Number.MAX_SAFE_INTEGER ? gid : null;
+  const guestTokenRaw = str(input.invited_guest);
+  const invited_guest_token = GUEST_LINK_TOKEN_RE.test(guestTokenRaw)
+    ? guestTokenRaw
+    : null;
 
   if (errors.length > 0) return { ok: false, errors };
 
@@ -321,7 +325,7 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
       guests_count: n,
       wish,
       guest_ref,
-      invited_guest_id,
+      invited_guest_token,
     },
   };
 }

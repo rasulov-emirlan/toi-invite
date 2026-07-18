@@ -30,7 +30,7 @@ export default function InviteCard({
   mode,
   slug,
   guestName,
-  invitedGuestId,
+  invitedGuest,
   shareBase,
   giftsSlot,
 }: {
@@ -40,9 +40,8 @@ export default function InviteCard({
   /** Required in "live" mode (share, .ics, RSVP submits). */
   slug?: string;
   guestName?: string;
-  /** Set when the guest arrived via a personal link (?g=) — links their RSVP
-   *  to the organizer's guest list. */
-  invitedGuestId?: number;
+  /** Personal-link capability (?g=) — links their RSVP to the guest board. */
+  invitedGuest?: string;
   shareBase?: string;
   /** Optional gift-wishlist block, rendered between countdown and RSVP. */
   giftsSlot?: React.ReactNode;
@@ -216,7 +215,7 @@ export default function InviteCard({
             slug={slug ?? ""}
             locale={locale}
             initialName={guestName}
-            invitedGuestId={invitedGuestId}
+            invitedGuest={invitedGuest}
             demo={mode === "demo"}
             calendarUrl={googleCalendarUrl(toCalendarEvent(invite, locale))}
             createOwnHref={createOwnHref}

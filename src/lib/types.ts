@@ -94,6 +94,8 @@ export interface GuestGift {
 export interface InvitedGuestRecord {
   id: number;
   invite_slug: string;
+  /** Personal-link capability (?g=<token>) — unguessable, unlike the row id. */
+  token: string;
   name: string;
   created_at: string;
   opened_at: string | null;
@@ -131,7 +133,7 @@ export interface RsvpInput {
   guests_count: number | string;
   wish?: string | null;
   guest_ref?: string | null;
-  invited_guest_id?: number | string | null;
+  invited_guest?: string | null;
 }
 
 /** Shape accepted by the premium-interest endpoint (before validation). */

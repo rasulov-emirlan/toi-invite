@@ -59,6 +59,18 @@ function heroDataUri(heroImage: string): Promise<string> {
   return p;
 }
 
+/**
+ * Rendered-JPEG cache: satori + sharp burn real CPU and WhatsApp's client
+ * cache doesn't protect the origin. Key includes everything drawn, so an edit
+ * naturally misses the cache; bounded LRU-ish (Map preserves insert order).
+ */
+const jpegCache = new Map<string, Buffer>();
+const JPEG_CACHE_MAX = 300;
+
+// At most two renders in flight — one container, satori is CPU-bound.
+let activeRenders = 0;
+const MAX_CONCURRENT_RENDERS = 2;
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> },
@@ -83,6 +95,22 @@ export async function GET(
   const names = displayNames(invite, locale);
   const label = eventLabel(invite, locale);
   const when = `${formatEventDate(invite.event_date, locale)} · ${invite.event_time}`;
+
+  const venueName = invite.venue_name;
+  const cacheKey = [slug, locale, invite.template, names, when, venueName].join("|");
+  const cached = jpegCache.get(cacheKey);
+  if (cached) return jpegResponse(cached);
+  if (activeRenders >= MAX_CONCURRENT_RENDERS) {
+    return new Response("busy", { status: 503, headers: { "Retry-After": "3" } });
+  }
+  activeRenders++;
+  try {
+    return jpegResponse(await render(cacheKey));
+  } finally {
+    activeRenders--;
+  }
+
+  async function render(key: string): Promise<Buffer> {
 
   const [fonts, bg] = await Promise.all([loadFonts(), heroDataUri(tpl.heroImage)]);
 
@@ -147,7 +175,7 @@ export async function GET(
             {when}
           </div>
           <div style={{ fontSize: 28, color: tpl.palette.muted }}>
-            {invite.venue_name}
+            {venueName}
           </div>
         </div>
       </div>
@@ -155,15 +183,26 @@ export async function GET(
     { width: WIDTH, height: HEIGHT, fonts },
   );
 
-  // ImageResponse only emits PNG (~1.2MB with the ornament art) — WhatsApp
-  // quietly drops og:images that big. Transcode to JPEG (~100KB).
-  const png = Buffer.from(await image.arrayBuffer());
-  const jpeg = await sharp(png).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+    // ImageResponse only emits PNG (~1.2MB with the ornament art) — WhatsApp
+    // quietly drops og:images that big. Transcode to JPEG (~100KB).
+    const png = Buffer.from(await image.arrayBuffer());
+    const jpeg = await sharp(png).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+    while (jpegCache.size >= JPEG_CACHE_MAX) {
+      const oldest = jpegCache.keys().next().value;
+      if (oldest === undefined) break;
+      jpegCache.delete(oldest);
+    }
+    jpegCache.set(key, jpeg);
+    return jpeg;
+  }
+}
+
+function jpegResponse(jpeg: Buffer): Response {
   return new Response(new Uint8Array(jpeg), {
     headers: {
       "Content-Type": "image/jpeg",
-      // Invites are editable; let WhatsApp/Telegram cache for a while but
-      // pick up edits within ten minutes.
+      // Client-side cache only; the origin-side cache above is keyed on the
+      // drawn content, so edits show up as soon as WhatsApp refetches.
       "Cache-Control": "public, max-age=600",
     },
   });

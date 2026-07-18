@@ -76,11 +76,16 @@ function db(): Database.Database {
     CREATE TABLE IF NOT EXISTS invited_guests (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       invite_slug TEXT NOT NULL REFERENCES invites(slug) ON DELETE CASCADE,
+      -- Personal-link capability: unguessable, so one guest's link can't be
+      -- varied into another guest's (an integer id would be enumerable).
+      token       TEXT NOT NULL,
       name        TEXT NOT NULL,
       created_at  TEXT NOT NULL DEFAULT (datetime('now')),
       opened_at   TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_invited_guests_slug ON invited_guests(invite_slug);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_invited_guests_token
+      ON invited_guests(invite_slug, token);
     CREATE TABLE IF NOT EXISTS events (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       name       TEXT NOT NULL,
@@ -227,6 +232,13 @@ export function updateInvite(slug: string, clean: CleanInvite): boolean {
   return info.changes > 0;
 }
 
+/** Whether any invite references this uploaded photo (upload GC uses this). */
+export function isPhotoReferenced(photoId: string): boolean {
+  return Boolean(
+    db().prepare("SELECT 1 FROM invites WHERE photo_id = ? LIMIT 1").get(photoId),
+  );
+}
+
 /** Invites created from the same browser (HttpOnly organizer cookie), newest first. */
 export function listInvitesByOrganizerRef(ref: string, limit = 20): InviteRecord[] {
   return db()
@@ -262,7 +274,7 @@ export function addRsvp(
     guests_count: number;
     wish: string | null;
     guest_ref: string | null;
-    invited_guest_id: number | null;
+    invited_guest_token: string | null;
   },
 ): boolean {
   const conn = db();
@@ -278,21 +290,22 @@ export function addRsvp(
           .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_ref = ?")
           .get(slug, data.guest_ref) as { id: number } | undefined)
       : undefined;
-    // Only trust the guest-list link when the id actually belongs to this
-    // invite — otherwise a crafted RSVP could light up someone else's board.
-    let gid: number | null = null;
-    if (data.invited_guest_id != null) {
-      const g = conn
-        .prepare("SELECT id FROM invited_guests WHERE id = ? AND invite_slug = ?")
-        .get(data.invited_guest_id, slug);
-      if (g) gid = data.invited_guest_id;
-    }
+    // Only trust the guest-list link when the capability token resolves for
+    // THIS invite — otherwise a crafted RSVP could light up someone's board.
+    const gid = data.invited_guest_token
+      ? ((conn
+          .prepare("SELECT id FROM invited_guests WHERE invite_slug = ? AND token = ?")
+          .get(slug, data.invited_guest_token) as { id: number } | undefined)?.id ?? null)
+      : null;
     if (prior) {
       conn
         .prepare(
+          // COALESCE(existing, new): the first personal-link association wins;
+          // a later submit from the same browser can't reassign the answer to
+          // a different guest row.
           `UPDATE rsvps
            SET guest_name = ?, attendance = ?, guests_count = ?, wish = ?,
-               invited_guest_id = COALESCE(?, invited_guest_id),
+               invited_guest_id = COALESCE(invited_guest_id, ?),
                created_at = datetime('now')
            WHERE id = ?`,
         )
@@ -408,6 +421,8 @@ export function unclaimGift(
 
 const MAX_INVITED_PER_INVITE = 300;
 
+const GUEST_TOKEN_LENGTH = 12;
+
 /** Organizer adds a guest to the list. Returns the new id, or null when the
  *  invite is missing or the list is full. */
 export function addInvitedGuest(slug: string, name: string): number | null {
@@ -420,8 +435,8 @@ export function addInvitedGuest(slug: string, name: string): number | null {
       .get(slug) as { c: number };
     if (c >= MAX_INVITED_PER_INVITE) return null;
     const info = conn
-      .prepare("INSERT INTO invited_guests (invite_slug, name) VALUES (?, ?)")
-      .run(slug, name);
+      .prepare("INSERT INTO invited_guests (invite_slug, token, name) VALUES (?, ?, ?)")
+      .run(slug, generateSlug(GUEST_TOKEN_LENGTH), name);
     return Number(info.lastInsertRowid);
   });
   return insert();
@@ -440,18 +455,27 @@ export function deleteInvitedGuest(slug: string, id: number): boolean {
   return info.changes > 0;
 }
 
+/** Resolve a personal-link token to the internal guest id (null if unknown). */
+export function resolveInvitedGuest(slug: string, token: string): number | null {
+  const row = db()
+    .prepare("SELECT id FROM invited_guests WHERE invite_slug = ? AND token = ?")
+    .get(slug, token) as { id: number } | undefined;
+  return row?.id ?? null;
+}
+
 /** First open of a personal link stamps opened_at; later opens keep the first. */
-export function markInvitedGuestOpened(slug: string, id: number): void {
+export function markInvitedGuestOpened(slug: string, token: string): void {
   db()
     .prepare(
       `UPDATE invited_guests SET opened_at = datetime('now')
-       WHERE id = ? AND invite_slug = ? AND opened_at IS NULL`,
+       WHERE invite_slug = ? AND token = ? AND opened_at IS NULL`,
     )
-    .run(id, slug);
+    .run(slug, token);
 }
 
 export interface GuestBoardRow {
   id: number;
+  token: string;
   name: string;
   opened_at: string | null;
   attendance: Attendance | null;
@@ -460,17 +484,19 @@ export interface GuestBoardRow {
 
 /**
  * The organizer's board: every invited guest joined with their latest linked
- * RSVP (latest — the same personal link opened in two browsers can produce two
- * rows; the newest answer wins, matching what addRsvp shows the guest).
+ * RSVP. "Latest" is by created_at (upserts refresh it), not by row id — two
+ * browsers on one personal link create two rows, and the newest ANSWER must
+ * win even when the older row was updated later.
  */
 export function listGuestBoard(slug: string): GuestBoardRow[] {
   return db()
     .prepare(
-      `SELECT g.id, g.name, g.opened_at, r.attendance, r.guests_count
+      `SELECT g.id, g.token, g.name, g.opened_at, r.attendance, r.guests_count
        FROM invited_guests g
        LEFT JOIN rsvps r ON r.id = (
-         SELECT MAX(id) FROM rsvps
+         SELECT id FROM rsvps
          WHERE invited_guest_id = g.id AND invite_slug = g.invite_slug
+         ORDER BY created_at DESC, id DESC LIMIT 1
        )
        WHERE g.invite_slug = ?
        ORDER BY g.id`,
@@ -480,12 +506,22 @@ export function listGuestBoard(slug: string): GuestBoardRow[] {
 
 // ---------- first-party analytics ----------
 
+/** Retention: keep raw events 90 days; prune opportunistically, ≤ once/hour. */
+const EVENTS_RETENTION_DAYS = 90;
+let lastEventsPruneMs = 0;
+
 /** Append-only product event. Never throws — analytics must not break a request. */
 export function logEvent(name: string, slug: string | null = null, ref: string | null = null): void {
   try {
-    db()
-      .prepare("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)")
-      .run(name, slug, ref);
+    const conn = db();
+    conn.prepare("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)").run(name, slug, ref);
+    const now = Date.now();
+    if (now - lastEventsPruneMs > 3600_000) {
+      lastEventsPruneMs = now;
+      conn
+        .prepare("DELETE FROM events WHERE created_at < datetime('now', ?)")
+        .run(`-${EVENTS_RETENTION_DAYS} days`);
+    }
   } catch (err) {
     console.error("logEvent failed", err);
   }
