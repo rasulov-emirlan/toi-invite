@@ -7,7 +7,10 @@ import type {
   EventTypeKey,
   GiftRecord,
   InviteRecord,
+  InvitedGuestRecord,
   Locale,
+  PremiumInterestRecord,
+  PremiumTierKey,
   RsvpRecord,
   TemplateKey,
 } from "./types";
@@ -70,8 +73,25 @@ function db(): Database.Database {
       comment    TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS invited_guests (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      invite_slug TEXT NOT NULL REFERENCES invites(slug) ON DELETE CASCADE,
+      name        TEXT NOT NULL,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      opened_at   TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_invited_guests_slug ON invited_guests(invite_slug);
+    CREATE TABLE IF NOT EXISTS events (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT NOT NULL,
+      slug       TEXT,
+      ref        TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_events_name_time ON events(name, created_at);
   `);
   migrateRsvps(handle);
+  migrateInvites(handle);
   _db = handle;
   return _db;
 }
@@ -94,22 +114,59 @@ function migrateRsvps(handle: Database.Database) {
   if (!cols.has("guest_ref")) {
     handle.exec("ALTER TABLE rsvps ADD COLUMN guest_ref TEXT");
   }
+  if (!cols.has("invited_guest_id")) {
+    handle.exec("ALTER TABLE rsvps ADD COLUMN invited_guest_id INTEGER");
+  }
   handle.exec(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_rsvps_slug_ref
      ON rsvps(invite_slug, guest_ref) WHERE guest_ref IS NOT NULL`,
   );
 }
 
-export function createInvite(clean: CleanInvite): { slug: string; token: string } {
+/**
+ * Additive invites migrations for databases created before these columns
+ * existed. All nullable — legacy invites simply render without the new blocks.
+ */
+function migrateInvites(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(invites)") as Array<{ name: string }>).map((c) => c.name),
+  );
+  const add = (name: string, ddl: string) => {
+    if (!cols.has(name)) handle.exec(`ALTER TABLE invites ADD COLUMN ${name} ${ddl}`);
+  };
+  add("greeting_ru", "TEXT");
+  add("greeting_ky", "TEXT");
+  add("host_phone", "TEXT");
+  add("landmark", "TEXT");
+  add("rsvp_deadline", "TEXT");
+  add("dress_code", "TEXT");
+  add("program_json", "TEXT");
+  add("photo_id", "TEXT");
+  add("organizer_ref", "TEXT");
+  add("created_ref", "TEXT");
+  handle.exec(
+    `CREATE INDEX IF NOT EXISTS idx_invites_organizer_ref
+     ON invites(organizer_ref) WHERE organizer_ref IS NOT NULL`,
+  );
+}
+
+export function createInvite(
+  clean: CleanInvite,
+  organizerRef: string | null = null,
+): { slug: string; token: string } {
   const conn = db();
   const token = generateToken();
   const insert = conn.prepare(`
     INSERT INTO invites
       (slug, organizer_token, event_type, template, locale, honoree, partner,
-       event_date, event_time, venue_name, venue_map_url, greeting)
+       event_date, event_time, venue_name, venue_map_url, greeting,
+       greeting_ru, greeting_ky, host_phone, landmark, rsvp_deadline,
+       dress_code, program_json, photo_id, organizer_ref, created_ref)
     VALUES
       (@slug, @organizer_token, @event_type, @template, @locale, @honoree, @partner,
-       @event_date, @event_time, @venue_name, @venue_map_url, @greeting)
+       @event_date, @event_time, @venue_name, @venue_map_url, @greeting,
+       @greeting_ru, @greeting_ky, @host_phone, @landmark, @rsvp_deadline,
+       @dress_code, @program_json, @photo_id, @organizer_ref, @created_ref)
   `);
 
   // Retry on the (astronomically unlikely) slug collision.
@@ -129,6 +186,16 @@ export function createInvite(clean: CleanInvite): { slug: string; token: string 
         venue_name: clean.venue_name,
         venue_map_url: clean.venue_map_url,
         greeting: clean.greeting,
+        greeting_ru: clean.greeting_ru,
+        greeting_ky: clean.greeting_ky,
+        host_phone: clean.host_phone,
+        landmark: clean.landmark,
+        rsvp_deadline: clean.rsvp_deadline,
+        dress_code: clean.dress_code,
+        program_json: clean.program_json,
+        photo_id: clean.photo_id,
+        organizer_ref: organizerRef,
+        created_ref: clean.created_ref,
       });
       return { slug, token };
     } catch (err) {
@@ -140,19 +207,34 @@ export function createInvite(clean: CleanInvite): { slug: string; token: string 
   throw new Error("could not allocate a unique slug");
 }
 
-/** Full-replace update of an invite's editable fields. */
+/** Full-replace update of an invite's editable fields (attribution is not editable). */
 export function updateInvite(slug: string, clean: CleanInvite): boolean {
+  const { created_ref: _ref, ...editable } = clean;
   const info = db()
     .prepare(
       `UPDATE invites
        SET event_type = @event_type, template = @template, locale = @locale,
            honoree = @honoree, partner = @partner, event_date = @event_date,
            event_time = @event_time, venue_name = @venue_name,
-           venue_map_url = @venue_map_url, greeting = @greeting
+           venue_map_url = @venue_map_url, greeting = @greeting,
+           greeting_ru = @greeting_ru, greeting_ky = @greeting_ky,
+           host_phone = @host_phone, landmark = @landmark,
+           rsvp_deadline = @rsvp_deadline, dress_code = @dress_code,
+           program_json = @program_json, photo_id = @photo_id
        WHERE slug = @slug`,
     )
-    .run({ slug, ...clean });
+    .run({ slug, ...editable });
   return info.changes > 0;
+}
+
+/** Invites created from the same browser (HttpOnly organizer cookie), newest first. */
+export function listInvitesByOrganizerRef(ref: string, limit = 20): InviteRecord[] {
+  return db()
+    .prepare(
+      `SELECT * FROM invites WHERE organizer_ref = ?
+       ORDER BY created_at DESC, slug DESC LIMIT ?`,
+    )
+    .all(ref, limit) as InviteRecord[];
 }
 
 export function getInvite(slug: string): InviteRecord | null {
@@ -180,6 +262,7 @@ export function addRsvp(
     guests_count: number;
     wish: string | null;
     guest_ref: string | null;
+    invited_guest_id: number | null;
   },
 ): boolean {
   const conn = db();
@@ -195,22 +278,32 @@ export function addRsvp(
           .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_ref = ?")
           .get(slug, data.guest_ref) as { id: number } | undefined)
       : undefined;
+    // Only trust the guest-list link when the id actually belongs to this
+    // invite — otherwise a crafted RSVP could light up someone else's board.
+    let gid: number | null = null;
+    if (data.invited_guest_id != null) {
+      const g = conn
+        .prepare("SELECT id FROM invited_guests WHERE id = ? AND invite_slug = ?")
+        .get(data.invited_guest_id, slug);
+      if (g) gid = data.invited_guest_id;
+    }
     if (prior) {
       conn
         .prepare(
           `UPDATE rsvps
            SET guest_name = ?, attendance = ?, guests_count = ?, wish = ?,
+               invited_guest_id = COALESCE(?, invited_guest_id),
                created_at = datetime('now')
            WHERE id = ?`,
         )
-        .run(data.guest_name, data.attendance, data.guests_count, data.wish, prior.id);
+        .run(data.guest_name, data.attendance, data.guests_count, data.wish, gid, prior.id);
     } else {
       conn
         .prepare(
-          `INSERT INTO rsvps (invite_slug, guest_name, guest_ref, attendance, guests_count, wish)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO rsvps (invite_slug, guest_name, guest_ref, attendance, guests_count, wish, invited_guest_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(slug, data.guest_name, data.guest_ref, data.attendance, data.guests_count, data.wish);
+        .run(slug, data.guest_name, data.guest_ref, data.attendance, data.guests_count, data.wish, gid);
     }
     return true;
   });
@@ -309,6 +402,120 @@ export function unclaimGift(
         )
         .run(id, slug, guestRef);
   return info.changes > 0;
+}
+
+// ---------- invited guests (organizer guest list) ----------
+
+const MAX_INVITED_PER_INVITE = 300;
+
+/** Organizer adds a guest to the list. Returns the new id, or null when the
+ *  invite is missing or the list is full. */
+export function addInvitedGuest(slug: string, name: string): number | null {
+  const conn = db();
+  const insert = conn.transaction((): number | null => {
+    const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
+    if (!exists) return null;
+    const { c } = conn
+      .prepare("SELECT COUNT(*) c FROM invited_guests WHERE invite_slug = ?")
+      .get(slug) as { c: number };
+    if (c >= MAX_INVITED_PER_INVITE) return null;
+    const info = conn
+      .prepare("INSERT INTO invited_guests (invite_slug, name) VALUES (?, ?)")
+      .run(slug, name);
+    return Number(info.lastInsertRowid);
+  });
+  return insert();
+}
+
+export function listInvitedGuests(slug: string): InvitedGuestRecord[] {
+  return db()
+    .prepare("SELECT * FROM invited_guests WHERE invite_slug = ? ORDER BY id")
+    .all(slug) as InvitedGuestRecord[];
+}
+
+export function deleteInvitedGuest(slug: string, id: number): boolean {
+  const info = db()
+    .prepare("DELETE FROM invited_guests WHERE id = ? AND invite_slug = ?")
+    .run(id, slug);
+  return info.changes > 0;
+}
+
+/** First open of a personal link stamps opened_at; later opens keep the first. */
+export function markInvitedGuestOpened(slug: string, id: number): void {
+  db()
+    .prepare(
+      `UPDATE invited_guests SET opened_at = datetime('now')
+       WHERE id = ? AND invite_slug = ? AND opened_at IS NULL`,
+    )
+    .run(id, slug);
+}
+
+// ---------- first-party analytics ----------
+
+/** Append-only product event. Never throws — analytics must not break a request. */
+export function logEvent(name: string, slug: string | null = null, ref: string | null = null): void {
+  try {
+    db()
+      .prepare("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)")
+      .run(name, slug, ref);
+  } catch (err) {
+    console.error("logEvent failed", err);
+  }
+}
+
+export interface StatsSummary {
+  invites_total: number;
+  rsvps_total: number;
+  premium_leads_total: number;
+  /** Per event name: all-time and last-7-days counts. */
+  events: Array<{ name: string; total: number; last7d: number }>;
+  /** Most-viewed invites, last 30 days. */
+  top_invites: Array<{ slug: string; views: number }>;
+  /** Invites attributed to a viral-loop ref. */
+  created_via_ref: number;
+}
+
+export function statsSummary(): StatsSummary {
+  const conn = db();
+  const one = (sql: string): number =>
+    (conn.prepare(sql).get() as { c: number }).c;
+  return {
+    invites_total: one("SELECT COUNT(*) c FROM invites"),
+    rsvps_total: one("SELECT COUNT(*) c FROM rsvps"),
+    premium_leads_total: one("SELECT COUNT(*) c FROM premium_interest"),
+    events: conn
+      .prepare(
+        `SELECT name, COUNT(*) total,
+                SUM(CASE WHEN created_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) last7d
+         FROM events GROUP BY name ORDER BY total DESC`,
+      )
+      .all() as StatsSummary["events"],
+    top_invites: conn
+      .prepare(
+        `SELECT slug, COUNT(*) views FROM events
+         WHERE name = 'invite_view' AND slug IS NOT NULL
+           AND created_at >= datetime('now', '-30 days')
+         GROUP BY slug ORDER BY views DESC LIMIT 10`,
+      )
+      .all() as StatsSummary["top_invites"],
+    created_via_ref: one(
+      "SELECT COUNT(*) c FROM invites WHERE created_ref IS NOT NULL",
+    ),
+  };
+}
+
+/** All premium-interest leads, newest first (the fake-door's output). */
+export function listPremiumInterest(): PremiumInterestRecord[] {
+  const rows = db()
+    .prepare("SELECT * FROM premium_interest ORDER BY id DESC")
+    .all() as Array<
+    Omit<PremiumInterestRecord, "tier" | "locale"> & { tier: string; locale: string }
+  >;
+  return rows.map((r) => ({
+    ...r,
+    tier: r.tier as PremiumTierKey,
+    locale: r.locale as Locale,
+  }));
 }
 
 /** Record a premium-tier interest lead (the payment fake-door). Returns the row id. */

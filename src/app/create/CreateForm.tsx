@@ -150,6 +150,14 @@ export default function CreateForm({
       venue_name: venue.trim() || "Той-хан «Ала-Тоо»",
       venue_map_url: mapUrl.trim() || null,
       greeting: greeting.trim(),
+      greeting_ru: null,
+      greeting_ky: null,
+      host_phone: null,
+      landmark: null,
+      rsvp_deadline: null,
+      dress_code: null,
+      program_json: null,
+      photo_id: null,
     };
   }
 

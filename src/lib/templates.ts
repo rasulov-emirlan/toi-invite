@@ -1,7 +1,11 @@
 import type { Locale, TemplateKey } from "./types";
 
+/** Visual composition family: classic frames vs Kyrgyz-ornament (oimo) plates. */
+export type TemplateLayout = "classic" | "ornament";
+
 export interface TemplateConfig {
   key: TemplateKey;
+  layout: TemplateLayout;
   names: Record<Locale, string>;
   /** CSS custom-property values applied to the invite page. */
   palette: {
@@ -27,6 +31,7 @@ export interface TemplateConfig {
 export const TEMPLATES: TemplateConfig[] = [
   {
     key: "gold",
+    layout: "classic",
     names: { ru: "Золото", ky: "Алтын" },
     palette: {
       bg: "#fbf5e9",
@@ -42,6 +47,7 @@ export const TEMPLATES: TemplateConfig[] = [
   },
   {
     key: "emerald",
+    layout: "classic",
     names: { ru: "Изумруд", ky: "Зумурат" },
     palette: {
       bg: "#eef5f0",
@@ -56,6 +62,7 @@ export const TEMPLATES: TemplateConfig[] = [
   },
   {
     key: "rose",
+    layout: "classic",
     names: { ru: "Роза", ky: "Кызгылт" },
     palette: {
       bg: "#fdf0f0",
@@ -67,6 +74,53 @@ export const TEMPLATES: TemplateConfig[] = [
     },
     ogImage: "/og/rose.jpg",
     heroImage: "/templates/rose.jpg",
+  },
+  // Kyrgyz-ornament (oimo/shyrdak) plates — kochkor-muyuz spirals, same three
+  // palettes as the classic frames so the invite chrome colors carry over.
+  {
+    key: "ornament_gold",
+    layout: "ornament",
+    names: { ru: "Оймо · золото", ky: "Оймо · алтын" },
+    palette: {
+      bg: "#fbf5e9",
+      ink: "#2a2016",
+      accent: "#8a6508",
+      accentSoft: "#e9d9a8",
+      muted: "#7a6a4f",
+      surface: "#fffdf7",
+    },
+    ogImage: "/templates/ornament_gold.jpg",
+    heroImage: "/templates/ornament_gold.jpg",
+  },
+  {
+    key: "ornament_emerald",
+    layout: "ornament",
+    names: { ru: "Оймо · изумруд", ky: "Оймо · зумурат" },
+    palette: {
+      bg: "#eef5f0",
+      ink: "#14261d",
+      accent: "#1f7a54",
+      accentSoft: "#bfe0cf",
+      muted: "#4f6b5d",
+      surface: "#fbfefc",
+    },
+    ogImage: "/templates/ornament_emerald.jpg",
+    heroImage: "/templates/ornament_emerald.jpg",
+  },
+  {
+    key: "ornament_rose",
+    layout: "ornament",
+    names: { ru: "Оймо · роза", ky: "Оймо · кызгылт" },
+    palette: {
+      bg: "#fdf0f0",
+      ink: "#2c1720",
+      accent: "#a83a55",
+      accentSoft: "#f4cdd6",
+      muted: "#8a5c68",
+      surface: "#fffafb",
+    },
+    ogImage: "/templates/ornament_rose.jpg",
+    heroImage: "/templates/ornament_rose.jpg",
   },
 ];
 
