@@ -97,7 +97,7 @@ export async function GET(
   const when = `${formatEventDate(invite.event_date, locale)} · ${invite.event_time}`;
 
   const venueName = invite.venue_name;
-  const cacheKey = [slug, locale, invite.template, names, when, venueName].join("|");
+  const cacheKey = [slug, locale, invite.template, label, names, when, venueName].join("|");
   const cached = jpegCache.get(cacheKey);
   if (cached) return jpegResponse(cached);
   if (activeRenders >= MAX_CONCURRENT_RENDERS) {

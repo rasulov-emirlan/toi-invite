@@ -84,8 +84,6 @@ function db(): Database.Database {
       opened_at   TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_invited_guests_slug ON invited_guests(invite_slug);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_invited_guests_token
-      ON invited_guests(invite_slug, token);
     CREATE TABLE IF NOT EXISTS events (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       name       TEXT NOT NULL,
@@ -97,6 +95,7 @@ function db(): Database.Database {
   `);
   migrateRsvps(handle);
   migrateInvites(handle);
+  migrateInvitedGuests(handle);
   _db = handle;
   return _db;
 }
@@ -422,6 +421,30 @@ export function unclaimGift(
 const MAX_INVITED_PER_INVITE = 300;
 
 const GUEST_TOKEN_LENGTH = 12;
+
+/**
+ * A database created before invited_guests carried capability tokens gets the
+ * column added and every existing row backfilled with a fresh token — the
+ * unique index can only be created after that, so it lives here rather than in
+ * the CREATE block.
+ */
+function migrateInvitedGuests(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(invited_guests)") as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!cols.has("token")) {
+    handle.exec("ALTER TABLE invited_guests ADD COLUMN token TEXT");
+    const rows = handle.prepare("SELECT id FROM invited_guests WHERE token IS NULL").all() as Array<{ id: number }>;
+    const set = handle.prepare("UPDATE invited_guests SET token = ? WHERE id = ?");
+    for (const r of rows) set.run(generateSlug(GUEST_TOKEN_LENGTH), r.id);
+  }
+  handle.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_invited_guests_token
+     ON invited_guests(invite_slug, token)`,
+  );
+}
 
 /** Organizer adds a guest to the list. Returns the new id, or null when the
  *  invite is missing or the list is full. */

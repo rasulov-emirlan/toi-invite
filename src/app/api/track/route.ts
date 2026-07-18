@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getInvite, logEvent, markInvitedGuestOpened } from "@/lib/db";
+import { getInvite, logEvent, markInvitedGuestOpened, resolveInvitedGuest } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { GUEST_LINK_TOKEN_RE } from "@/lib/validation";
 import { clientIp, trackLimiter } from "@/lib/ratelimit";
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       } else if (name === "guest_open" && slug) {
         // Personal-link "opened" stamp — capability-token gated, idempotent.
         const g = typeof body?.g === "string" && GUEST_LINK_TOKEN_RE.test(body.g) ? body.g : null;
-        if (g) {
+        if (g && resolveInvitedGuest(slug, g) != null) {
           markInvitedGuestOpened(slug, g);
           logEvent("guest_opened", slug);
         }
