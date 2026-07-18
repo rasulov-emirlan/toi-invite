@@ -6,14 +6,27 @@ import { listMyInvites, type MyInvite } from "@/lib/my-invites";
 import type { Locale } from "@/lib/types";
 
 /**
- * Invites created in this browser (localStorage) — the recovery path for the
- * organizer link. Renders nothing until mounted and nothing when the list is
- * empty, so first-time visitors never see it.
+ * Invites created in this browser — the recovery path for the organizer link.
+ * Two sources, merged: the server list (HttpOnly organizer cookie — survives a
+ * wiped localStorage) and the local list (works when cookies are blocked).
+ * Renders nothing until mounted and nothing when both are empty.
  */
-export default function MyInvites({ locale }: { locale: Locale }) {
+export default function MyInvites({
+  locale,
+  serverInvites = [],
+}: {
+  locale: Locale;
+  serverInvites?: MyInvite[];
+}) {
   const tr = translator(locale);
   const [invites, setInvites] = useState<MyInvite[] | null>(null);
-  useEffect(() => setInvites(listMyInvites()), []);
+  useEffect(() => {
+    const local = listMyInvites();
+    const seen = new Set(serverInvites.map((i) => i.slug));
+    setInvites([...serverInvites, ...local.filter((i) => !seen.has(i.slug))]);
+    // serverInvites comes from the server render and never changes client-side.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!invites || invites.length === 0) return null;
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getInvite, listGifts, listRsvps } from "@/lib/db";
+import { getInvite, listGifts, listGuestBoard, listRsvps } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { translator } from "@/lib/i18n";
 import { computeRsvpStats } from "@/lib/stats";
@@ -7,9 +7,9 @@ import { displayNames, eventLabel } from "@/lib/invite-view";
 import { formatKgTimestamp } from "@/lib/calendar";
 import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
-import PersonalLinkGenerator from "./PersonalLinkGenerator";
 import ShareBar from "./ShareBar";
 import GiftManager from "./GiftManager";
+import GuestBoard from "./GuestBoard";
 
 export const dynamic = "force-dynamic";
 export const metadata = { robots: { index: false, follow: false } };
@@ -122,19 +122,19 @@ export default async function RsvpsPage({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td>
+                    <td data-label={tr("rsvps.col_name")}>
                       {row.guest_name}
                       {row.wish && <span className="rsvp-wish">«{row.wish}»</span>}
                     </td>
-                    <td>
+                    <td data-label={tr("rsvps.col_status")}>
                       <span className={`pill pill--${row.attendance}`}>
                         {row.attendance === "yes"
                           ? tr("rsvps.status_yes")
                           : tr("rsvps.status_no")}
                       </span>
                     </td>
-                    <td>{row.attendance === "yes" ? row.guests_count : "—"}</td>
-                    <td>{formatKgTimestamp(row.created_at)}</td>
+                    <td data-label={tr("rsvps.col_guests")}>{row.attendance === "yes" ? row.guests_count : "—"}</td>
+                    <td data-label={tr("rsvps.col_when")}>{formatKgTimestamp(row.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -149,7 +149,12 @@ export default async function RsvpsPage({
           initial={listGifts(slug)}
         />
 
-        <PersonalLinkGenerator slug={slug} locale={locale} />
+        <GuestBoard
+          slug={slug}
+          token={token as string}
+          locale={locale}
+          initial={listGuestBoard(slug)}
+        />
       </main>
       <footer className="footer">
         <div className="wrap">{tr("landing.footer")}</div>

@@ -1223,3 +1223,210 @@ table.rsvps th {
   letter-spacing: 0;
   text-transform: none;
 }
+
+/* ---------- product pass 2026-07: photo, program, guest board, viral foot ---------- */
+
+/* Uploaded hero photo: rounded portrait over the template art. */
+.invite__photo {
+  display: block;
+  width: 148px;
+  height: 148px;
+  margin: 0.75rem auto 0.25rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--tsurface);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+}
+
+/* Toi programme block on the invite. */
+.program {
+  margin-top: 2rem;
+}
+.program__list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+.program__item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed var(--soft);
+}
+.program__item:last-child {
+  border-bottom: none;
+}
+.program__time {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ac);
+  min-width: 3.2rem;
+}
+.program__title {
+  color: var(--tink);
+}
+
+.rsvp-deadline {
+  margin: 1.5rem 0 -0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--tmuted);
+}
+
+/* Viral footer line. */
+.invite__madewith {
+  margin-top: 0.6rem;
+}
+.invite__madewith a {
+  color: var(--ac);
+}
+
+/* Builder: picked photo preview + programme editor rows. */
+.photo-picked {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.photo-picked img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--gray-300);
+}
+.progrow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Organizer guest board. */
+.guestboard {
+  margin-top: 3rem;
+}
+.guestboard h2 {
+  margin: 0.5rem 0 0.25rem;
+}
+.guestboard .addrow {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.guestboard .addrow input {
+  flex: 1;
+}
+.guestlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.guestcard {
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  padding: 0.75rem 1rem;
+}
+.guestcard__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.guestcard__name {
+  font-weight: 600;
+}
+.guestcard__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+.guestcard__actions .btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.7rem;
+}
+.guestcard__remove {
+  margin-left: auto;
+  color: var(--gray-500);
+}
+.pill--g-coming {
+  color: #1f7a54;
+}
+.pill--g-declined {
+  color: #a83a55;
+}
+.pill--g-opened {
+  color: #8a6508;
+}
+.pill--g-invited {
+  color: var(--gray-500);
+}
+
+/* Organizer RSVP table becomes cards on phones (the operator's own device). */
+@media (max-width: 640px) {
+  .rsvps thead {
+    display: none;
+  }
+  .rsvps,
+  .rsvps tbody,
+  .rsvps tr,
+  .rsvps td {
+    display: block;
+    width: 100%;
+  }
+  .rsvps tr {
+    border: 1px solid var(--gray-300);
+    background: #fff;
+    margin-bottom: 0.75rem;
+    padding: 0.6rem 0.9rem;
+  }
+  .rsvps td {
+    border: none;
+    padding: 0.2rem 0;
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+  .rsvps td::before {
+    content: attr(data-label);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gray-500);
+    min-width: 6.5rem;
+  }
+}
+
+/* Premium page: real template gallery. */
+.tpl-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.tpl-gallery__item {
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  padding: 0.6rem;
+}
+.tpl-gallery__art {
+  aspect-ratio: 1200 / 630;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tpl-gallery__name {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 0.5rem;
+  display: block;
+}

@@ -450,6 +450,34 @@ export function markInvitedGuestOpened(slug: string, id: number): void {
     .run(id, slug);
 }
 
+export interface GuestBoardRow {
+  id: number;
+  name: string;
+  opened_at: string | null;
+  attendance: Attendance | null;
+  guests_count: number | null;
+}
+
+/**
+ * The organizer's board: every invited guest joined with their latest linked
+ * RSVP (latest — the same personal link opened in two browsers can produce two
+ * rows; the newest answer wins, matching what addRsvp shows the guest).
+ */
+export function listGuestBoard(slug: string): GuestBoardRow[] {
+  return db()
+    .prepare(
+      `SELECT g.id, g.name, g.opened_at, r.attendance, r.guests_count
+       FROM invited_guests g
+       LEFT JOIN rsvps r ON r.id = (
+         SELECT MAX(id) FROM rsvps
+         WHERE invited_guest_id = g.id AND invite_slug = g.invite_slug
+       )
+       WHERE g.invite_slug = ?
+       ORDER BY g.id`,
+    )
+    .all(slug) as GuestBoardRow[];
+}
+
 // ---------- first-party analytics ----------
 
 /** Append-only product event. Never throws — analytics must not break a request. */

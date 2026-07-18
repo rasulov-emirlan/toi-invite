@@ -1,7 +1,12 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
+import { listInvitesByOrganizerRef } from "@/lib/db";
+import { displayNames, eventLabel } from "@/lib/invite-view";
 import type { Locale } from "@/lib/types";
 import MyInvites from "@/components/MyInvites";
+
+export const dynamic = "force-dynamic";
 
 export default async function Landing({
   searchParams,
@@ -13,6 +18,18 @@ export default async function Landing({
   const tr = translator(locale);
   const other: Locale = locale === "ru" ? "ky" : "ru";
   const createHref = `/create?lang=${locale}`;
+
+  // Server-side "Мои приглашения": the HttpOnly organizer cookie survives a
+  // cleared localStorage, so recovery no longer depends on browser storage.
+  const orgRef = (await cookies()).get("toi_org")?.value;
+  const serverInvites = orgRef
+    ? listInvitesByOrganizerRef(orgRef).map((inv) => ({
+        slug: inv.slug,
+        token: inv.organizer_token,
+        title: `${eventLabel(inv, inv.locale)} · ${displayNames(inv, inv.locale)}`,
+        createdAt: inv.created_at,
+      }))
+    : [];
 
   return (
     <>
@@ -49,7 +66,7 @@ export default async function Landing({
         </div>
       </section>
 
-      <MyInvites locale={locale} />
+      <MyInvites locale={locale} serverInvites={serverInvites} />
 
       <section className="section">
         <div className="wrap">
