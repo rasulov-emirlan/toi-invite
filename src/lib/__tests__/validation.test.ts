@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isSafeHttpUrl, validateInvite, validateRsvp, LIMITS } from "../validation";
+import {
+  isSafeHttpUrl,
+  normalizeMapUrl,
+  programFromJson,
+  validateInvite,
+  validateRsvp,
+  LIMITS,
+} from "../validation";
 import type { InviteInput, RsvpInput } from "../types";
 
 const goodInvite: InviteInput = {
@@ -192,6 +199,127 @@ describe("null/array bodies", () => {
       expect(r1.ok).toBe(false);
       const r2 = validateInvite(bad as unknown as InviteInput);
       expect(r2.ok).toBe(false);
+    }
+  });
+});
+
+describe("validateInvite new fields", () => {
+  it("accepts the full rich-field set and normalizes the phone", () => {
+    const r = validateInvite({
+      ...goodInvite,
+      greeting_ru: "Дорогие гости!",
+      greeting_ky: "Кымбаттуу меймандар!",
+      host_phone: "0555 123 456",
+      landmark: "Рядом с филармонией",
+      rsvp_deadline: "2026-09-01",
+      dress_code: "Нарядная одежда",
+      program: [
+        { time: "17:00", title: "Встреча гостей" },
+        { time: "", title: "Той башталышы" },
+      ],
+      photo_id: "abc123def456",
+      created_ref: "abcd2345",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value.host_phone).toBe("+996555123456");
+      expect(r.value.greeting_ky).toBe("Кымбаттуу меймандар!");
+      expect(r.value.rsvp_deadline).toBe("2026-09-01");
+      expect(JSON.parse(r.value.program_json!)).toHaveLength(2);
+      expect(r.value.photo_id).toBe("abc123def456");
+      expect(r.value.created_ref).toBe("abcd2345");
+    }
+  });
+
+  it("treats all new fields as optional (legacy body still validates)", () => {
+    const r = validateInvite(goodInvite);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.value.greeting_ru).toBe(null);
+      expect(r.value.host_phone).toBe(null);
+      expect(r.value.program_json).toBe(null);
+      expect(r.value.created_ref).toBe(null);
+    }
+  });
+
+  it("rejects an unparseable host phone but nulls a junk created_ref silently", () => {
+    const bad = validateInvite({ ...goodInvite, host_phone: "12345" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors).toContain("host_phone");
+    const ref = validateInvite({ ...goodInvite, created_ref: "<script>alert(1)</script>" });
+    expect(ref.ok && ref.value.created_ref).toBe(null);
+  });
+
+  it("rejects malformed programs and bad photo ids", () => {
+    const badTime = validateInvite({
+      ...goodInvite,
+      program: [{ time: "25:99", title: "x" }],
+    });
+    expect(!badTime.ok && badTime.errors.includes("program")).toBe(true);
+    const notArray = validateInvite({ ...goodInvite, program: "17:00 встреча" });
+    expect(!notArray.ok && notArray.errors.includes("program")).toBe(true);
+    const badPhoto = validateInvite({ ...goodInvite, photo_id: "../etc/passwd" });
+    expect(!badPhoto.ok && badPhoto.errors.includes("photo_id")).toBe(true);
+  });
+
+  it("skips blank program rows and rejects overlong programs", () => {
+    const blanks = validateInvite({
+      ...goodInvite,
+      program: [{ time: "", title: "" }, { time: "18:00", title: "Той" }],
+    });
+    expect(blanks.ok).toBe(true);
+    if (blanks.ok) expect(JSON.parse(blanks.value.program_json!)).toHaveLength(1);
+    const tooMany = validateInvite({
+      ...goodInvite,
+      program: Array.from({ length: 13 }, (_, i) => ({ time: "10:00", title: `п${i}` })),
+    });
+    expect(!tooMany.ok && tooMany.errors.includes("program")).toBe(true);
+  });
+});
+
+describe("rsvp_deadline bounds", () => {
+  it("rejects a deadline after the event date", () => {
+    const r = validateInvite({ ...goodInvite, rsvp_deadline: "2099-01-01" });
+    expect(!r.ok && r.errors.includes("rsvp_deadline")).toBe(true);
+  });
+  it("accepts a deadline on or before the event date", () => {
+    const r = validateInvite({ ...goodInvite, rsvp_deadline: goodInvite.event_date });
+    expect(r.ok && r.value.rsvp_deadline).toBe(goodInvite.event_date);
+  });
+});
+
+describe("normalizeMapUrl", () => {
+  it("prepends https:// to bare share-sheet hosts and leaves full URLs alone", () => {
+    expect(normalizeMapUrl("go.2gis.com/abcd")).toBe("https://go.2gis.com/abcd");
+    expect(normalizeMapUrl("2gis.kg/bishkek/geo/123")).toBe("https://2gis.kg/bishkek/geo/123");
+    expect(normalizeMapUrl("https://go.2gis.com/abcd")).toBe("https://go.2gis.com/abcd");
+    expect(normalizeMapUrl("maps.app.goo.gl/XyZ")).toBe("https://maps.app.goo.gl/XyZ");
+  });
+  it("does not rescue junk into a URL", () => {
+    expect(normalizeMapUrl("рядом с филармонией")).toBe("рядом с филармонией");
+    expect(normalizeMapUrl("javascript:alert(1)")).toBe("javascript:alert(1)");
+    expect(isSafeHttpUrl(normalizeMapUrl("javascript:alert(1)"))).toBe(false);
+  });
+});
+
+describe("programFromJson", () => {
+  it("round-trips and degrades to empty on junk", () => {
+    const json = JSON.stringify([{ time: "17:00", title: "Встреча" }]);
+    expect(programFromJson(json)).toEqual([{ time: "17:00", title: "Встреча" }]);
+    expect(programFromJson(null)).toEqual([]);
+    expect(programFromJson("not json")).toEqual([]);
+    expect(programFromJson('{"a":1}')).toEqual([]);
+  });
+});
+
+describe("validateRsvp invited_guest (personal-link token)", () => {
+  const base = { guest_name: "Айбек", attendance: "yes", guests_count: 2 };
+  it("accepts a slug-alphabet token and nulls junk without rejecting", () => {
+    const good = validateRsvp({ ...base, invited_guest: "abc234xyz987" });
+    expect(good.ok && good.value.invited_guest_token).toBe("abc234xyz987");
+    for (const junk of ["ab", "UPPER-case!", "../../etc", 7, null, undefined]) {
+      const r = validateRsvp({ ...base, invited_guest: junk as never });
+      expect(r.ok && r.value.invited_guest_token).toBe(null);
     }
   });
 });

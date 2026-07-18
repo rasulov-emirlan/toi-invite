@@ -1,4 +1,4 @@
-import { getInvite } from "@/lib/db";
+import { getInvite, logEvent } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
 import { isLocale } from "@/lib/i18n";
 import { icsContent } from "@/lib/calendar";
@@ -22,6 +22,7 @@ export async function GET(
   const langParam = url.searchParams.get("lang");
   const locale: Locale = isLocale(langParam) ? langParam : invite.locale;
 
+  logEvent("ics_download", slug);
   const ics = icsContent(toCalendarEvent(invite, locale), `${slug}@toi-invite`);
   return new Response(ics, {
     status: 200,

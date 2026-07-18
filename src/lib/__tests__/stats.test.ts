@@ -11,6 +11,7 @@ function row(partial: Partial<RsvpRecord>): RsvpRecord {
     guests_count: 1,
     wish: null,
     guest_ref: null,
+    invited_guest_id: null,
     created_at: "2026-07-07 00:00:00",
     ...partial,
   };

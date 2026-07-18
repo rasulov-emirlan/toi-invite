@@ -114,3 +114,13 @@ export const inviteEditLimiter = new TokenBucketLimiter(30, 1 / 5);
 
 // Gift claims per (slug, ip) — a family browsing together shares a carrier IP.
 export const giftClaimLimiter = new TokenBucketLimiter(30, 1 / 2);
+
+// Product-analytics beacons: cheap, high-volume, harmless — generous per-IP cap.
+export const trackLimiter = new TokenBucketLimiter(60, 2);
+
+// Photo uploads: heavier than any other write — keep the bucket small.
+export const photoUploadLimiter = new TokenBucketLimiter(10, 1 / 10);
+
+// OG-image rendering burns real CPU (satori + JPEG transcode). WhatsApp/TG
+// fetch once per share; humans almost never hit it directly.
+export const ogLimiter = new TokenBucketLimiter(30, 1);

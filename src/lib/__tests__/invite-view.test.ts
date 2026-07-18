@@ -20,6 +20,16 @@ const base: InviteRecord = {
   venue_name: "Ала-Тоо",
   venue_map_url: null,
   greeting: "Кош келиңиздер",
+  greeting_ru: null,
+  greeting_ky: null,
+  host_phone: null,
+  landmark: null,
+  rsvp_deadline: null,
+  dress_code: null,
+  program_json: null,
+  photo_id: null,
+  organizer_ref: null,
+  created_ref: null,
   created_at: "2026-07-07 00:00:00",
 };
 

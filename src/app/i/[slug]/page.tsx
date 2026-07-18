@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getInvite, listGifts } from "@/lib/db";
+import { getInvite, listGifts, logEvent } from "@/lib/db";
+import { GUEST_LINK_TOKEN_RE } from "@/lib/validation";
+import StampOpen from "@/components/StampOpen";
 import { toGuestGifts } from "@/lib/gifts";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
@@ -35,10 +37,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const r = await resolve(params, searchParams);
   if (!r) return { title: "Той-Invite" };
-  const { invite, locale } = r;
-  const tpl = getTemplate(invite.template);
+  const { invite, locale, slug } = r;
   const title = inviteTitle(invite, locale);
   const description = ogDescription(invite, locale);
+  // Per-invite OG card (names + date rendered into the image) — this is what
+  // makes the link unfurl look hand-made in WhatsApp instead of a blank frame.
+  const ogUrl = `/api/og/${slug}?lang=${locale}`;
   return {
     title,
     description,
@@ -46,13 +50,13 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      images: [{ url: tpl.ogImage, width: 1200, height: 630, alt: title }],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [tpl.ogImage],
+      images: [ogUrl],
     },
   };
 }
@@ -62,17 +66,26 @@ export default async function InvitePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ lang?: string; to?: string }>;
+  searchParams: Promise<{ lang?: string; to?: string; g?: string }>;
 }) {
   const r = await resolve(params, searchParams);
   if (!r) {
     return <NotFound />;
   }
   const { invite, locale, slug } = r;
-  const guestName = sanitizeGuestName((await searchParams).to);
+  const sp = await searchParams;
+  const guestName = sanitizeGuestName(sp.to);
+
+  // Personal links carry ?g=<guest capability token>. The "opened" stamp is
+  // client-side (StampOpen beacon) — WhatsApp/Telegram preview crawlers fetch
+  // these URLs and must not mark a guest as having opened anything.
+  const invitedGuest = GUEST_LINK_TOKEN_RE.test(sp.g ?? "") ? (sp.g as string) : null;
+  logEvent("invite_view", slug);
   const tpl = getTemplate(invite.template);
   const other: Locale = locale === "ru" ? "ky" : "ru";
-  const toQuery = guestName ? `&to=${encodeURIComponent(guestName)}` : "";
+  const toQuery =
+    (guestName ? `&to=${encodeURIComponent(guestName)}` : "") +
+    (invitedGuest ? `&g=${invitedGuest}` : "");
   // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
   // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
   // relative.
@@ -98,6 +111,7 @@ export default async function InvitePage({
         </Link>
       </div>
 
+      {invitedGuest && <StampOpen slug={slug} guest={invitedGuest} />}
       <div className="invite__inner">
         <InviteCard
           invite={invite}
@@ -105,6 +119,7 @@ export default async function InvitePage({
           mode="live"
           slug={slug}
           guestName={guestName || undefined}
+          invitedGuest={invitedGuest ?? undefined}
           shareBase={shareBase}
           giftsSlot={
             gifts.length > 0 ? (

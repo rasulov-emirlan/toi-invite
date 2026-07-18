@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { translator } from "@/lib/i18n";
+import { track } from "@/lib/track";
 import { getGuestRef } from "@/lib/guest-ref";
 import type { Attendance, Locale } from "@/lib/types";
 
@@ -9,13 +10,21 @@ export default function RsvpForm({
   slug,
   locale,
   initialName = "",
+  invitedGuest,
   demo = false,
+  calendarUrl,
+  createOwnHref,
 }: {
   slug: string;
   locale: Locale;
   initialName?: string;
+  /** From a personal link — ties the answer to the organizer's guest list. */
+  invitedGuest?: string;
   /** Demo mode (the /demo sample): simulate success locally, send nothing. */
   demo?: boolean;
+  /** Post-RSVP follow-ups: peak-intent moment right after a guest answers. */
+  calendarUrl?: string;
+  createOwnHref?: string;
 }) {
   const tr = translator(locale);
   const [name, setName] = useState(initialName);
@@ -54,6 +63,7 @@ export default function RsvpForm({
           guests_count: attendance === "yes" ? guests : 1,
           wish,
           guest_ref: getGuestRef(),
+          invited_guest: invitedGuest ?? null,
         }),
       });
       if (res.status === 429) {
@@ -78,10 +88,34 @@ export default function RsvpForm({
   }
 
   if (done) {
+    // The moment right after answering is peak engagement: hand the coming
+    // guest the calendar button, and everyone the create-your-own loop.
     return (
       <div className="rsvp">
         <div className="thanks" role="status">
           {done === "yes" ? tr("invite.rsvp_thanks_yes") : tr("invite.rsvp_thanks_no")}
+        </div>
+        <div className="actions" style={{ justifyContent: "center", marginTop: "1rem" }}>
+          {done === "yes" && calendarUrl && (
+            <a
+              className="btn-ac btn-ac--solid"
+              href={calendarUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track("calendar_click", slug || undefined)}
+            >
+              📅 {tr("invite.add_to_calendar")}
+            </a>
+          )}
+          {createOwnHref && (
+            <a
+              className="btn-ac"
+              href={createOwnHref}
+              onClick={() => track("create_own_click", slug || undefined)}
+            >
+              {tr("invite.after_create_own")}
+            </a>
+          )}
         </div>
       </div>
     );
