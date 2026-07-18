@@ -44,10 +44,20 @@ export function ogDescription(invite: InviteDisplay, locale: Locale): string {
   return parts.filter(Boolean).join(" · ");
 }
 
+/**
+ * Greeting for the viewing locale: the authored per-language text when the
+ * organizer wrote it, otherwise the invite's primary greeting — never a blank
+ * and never a machine translation.
+ */
+export function greetingFor(invite: InviteDisplay, locale: Locale): string {
+  const specific = locale === "ru" ? invite.greeting_ru : invite.greeting_ky;
+  return (specific ?? "").trim() || invite.greeting;
+}
+
 export function toCalendarEvent(invite: InviteDisplay, locale: Locale): CalendarEvent {
   return {
     title: inviteTitle(invite, locale),
-    details: invite.greeting || eventLabel(invite, locale),
+    details: greetingFor(invite, locale) || eventLabel(invite, locale),
     location: invite.venue_name,
     date: invite.event_date,
     time: invite.event_time,

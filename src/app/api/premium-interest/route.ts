@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { validatePremiumInterest } from "@/lib/premium";
-import { addPremiumInterest } from "@/lib/db";
+import { addPremiumInterest, logEvent } from "@/lib/db";
 import { clientKey, premiumInterestLimiter } from "@/lib/ratelimit";
 import type { PremiumInterestInput } from "@/lib/types";
 
@@ -30,6 +30,7 @@ export async function POST(req: Request) {
 
   try {
     addPremiumInterest(result.value);
+    logEvent("premium_interest", null, result.value.tier);
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {
     console.error("addPremiumInterest failed", err);

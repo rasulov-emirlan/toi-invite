@@ -206,6 +206,56 @@ const strings = {
     "demo.foot_cta": "Создать своё приглашение",
     "create.preview_kicker": "ПРЕДПРОСМОТР",
     "create.preview_hint": "Так гости увидят ваше приглашение — обновляется по мере заполнения.",
+    "invite.made_with": "Создано на Той·Invite — сделайте своё бесплатно",
+    "invite.after_create_own": "Создать своё приглашение — бесплатно",
+
+    "create.greeting_langs_hint":
+      "Заполните оба языка — гость увидит приветствие на своём.",
+    "create.more_toggle": "Дополнительно: контакт, ориентир, программа",
+    "create.field_host_phone": "Телефон для гостей (WhatsApp)",
+    "create.field_host_phone_hint":
+      "Гости смогут написать в WhatsApp или позвонить одним касанием.",
+    "create.field_landmark": "Ориентир (необязательно)",
+    "create.field_landmark_ph": "Например: рядом с филармонией",
+    "create.field_dress_code": "Дресс-код (необязательно)",
+    "create.field_dress_code_ph": "Нарядная одежда",
+    "create.field_deadline": "Ответить до (необязательно)",
+    "create.field_program": "Программа тоя (необязательно)",
+    "create.program_add": "+ Добавить пункт",
+    "create.program_title_ph": "Встреча гостей",
+    "create.field_photo": "Фото (необязательно)",
+    "create.photo_hint":
+      "Фото пары или виновника торжества — станет украшением приглашения.",
+    "create.photo_uploading": "Загружаем фото…",
+    "create.photo_remove": "Убрать фото",
+    "create.photo_error": "Не удалось загрузить фото. Файл до 5 МБ, JPG/PNG/WebP.",
+
+    "invite.landmark": "Ориентир",
+    "invite.dress_code": "Дресс-код",
+    "invite.program_kicker": "ПРОГРАММА",
+    "invite.host_whatsapp": "Написать в WhatsApp",
+    "invite.host_call": "Позвонить",
+    "invite.rsvp_deadline": "Пожалуйста, ответьте до {date}",
+
+    "rsvps.board_kicker": "МОИ ГОСТИ",
+    "rsvps.board_title": "Кого пригласили",
+    "rsvps.board_hint":
+      "Добавьте имена — каждому готова именная ссылка. Видно, кто открыл приглашение и кто ответил.",
+    "rsvps.board_add": "Добавить",
+    "rsvps.board_empty":
+      "Пока никого нет. Добавьте первых гостей — и отправьте каждому его ссылку.",
+    "rsvps.st_not_opened": "Не открыл(а)",
+    "rsvps.st_opened": "Открыл(а)",
+    "rsvps.st_coming": "Придёт",
+    "rsvps.st_declined": "Не придёт",
+    "rsvps.board_remind": "Напомнить",
+    "rsvps.remind_text": "Напоминаем про той! Будем рады вашему ответу:",
+
+    "premium.examples_kicker": "ШАБЛОНЫ",
+    "premium.examples_title": "Так выглядит ваше приглашение",
+    "premium.examples_hint":
+      "Шесть дизайнов доступны бесплатно уже сейчас. Премиум добавит эксклюзивные дизайны, фото-шаблоны и оформление под заказ.",
+    "premium.examples_demo": "Открыть пример →",
   },
   ky: {
     "brand.name": "Той-Invite",
@@ -399,6 +449,56 @@ const strings = {
     "demo.foot_cta": "Өз чакырууңузду түзүү",
     "create.preview_kicker": "АЛДЫН АЛА КӨРҮҮ",
     "create.preview_hint": "Меймандар чакырууну ушундай көрүшөт — толтурган сайын жаңырат.",
+    "invite.made_with": "Той·Invite менен түзүлгөн — өзүңүздүкүн акысыз түзүңүз",
+    "invite.after_create_own": "Өз чакырууңузду түзүү — акысыз",
+
+    "create.greeting_langs_hint":
+      "Эки тилди тең толтуруңуз — мейман кайрылууну өз тилинде көрөт.",
+    "create.more_toggle": "Кошумча: байланыш, багыт, программа",
+    "create.field_host_phone": "Меймандар үчүн телефон (WhatsApp)",
+    "create.field_host_phone_hint":
+      "Меймандар бир басып WhatsApp'ка жазат же чалат.",
+    "create.field_landmark": "Багыт-белги (милдеттүү эмес)",
+    "create.field_landmark_ph": "Мисалы: филармониянын жанында",
+    "create.field_dress_code": "Дресс-код (милдеттүү эмес)",
+    "create.field_dress_code_ph": "Салтанаттуу кийим",
+    "create.field_deadline": "Жооп берүү мөөнөтү (милдеттүү эмес)",
+    "create.field_program": "Той программасы (милдеттүү эмес)",
+    "create.program_add": "+ Пункт кошуу",
+    "create.program_title_ph": "Меймандарды тосуу",
+    "create.field_photo": "Сүрөт (милдеттүү эмес)",
+    "create.photo_hint":
+      "Жубайлардын же той ээсинин сүрөтү — чакыруунун көркү болот.",
+    "create.photo_uploading": "Сүрөт жүктөлүүдө…",
+    "create.photo_remove": "Сүрөттү алып салуу",
+    "create.photo_error": "Сүрөт жүктөлбөй калды. Файл 5 МБга чейин, JPG/PNG/WebP.",
+
+    "invite.landmark": "Багыт-белги",
+    "invite.dress_code": "Дресс-код",
+    "invite.program_kicker": "ПРОГРАММА",
+    "invite.host_whatsapp": "WhatsApp'ка жазуу",
+    "invite.host_call": "Чалуу",
+    "invite.rsvp_deadline": "Сураныч, {date} күнүнө чейин жооп бериңиз",
+
+    "rsvps.board_kicker": "МЕНИН МЕЙМАНДАРЫМ",
+    "rsvps.board_title": "Ким чакырылды",
+    "rsvps.board_hint":
+      "Ысымдарды кошуңуз — ар бирине аты жазылган шилтеме даяр. Ким ачканы жана ким жооп бергени көрүнөт.",
+    "rsvps.board_add": "Кошуу",
+    "rsvps.board_empty":
+      "Азырынча эч ким жок. Алгачкы меймандарды кошуп, ар бирине шилтемесин жөнөтүңүз.",
+    "rsvps.st_not_opened": "Ачкан жок",
+    "rsvps.st_opened": "Ачты",
+    "rsvps.st_coming": "Келет",
+    "rsvps.st_declined": "Келбейт",
+    "rsvps.board_remind": "Эскертүү",
+    "rsvps.remind_text": "Той жөнүндө эскертебиз! Жообуңузду күтөбүз:",
+
+    "premium.examples_kicker": "ҮЛГҮЛӨР",
+    "premium.examples_title": "Чакырууңуз ушундай көрүнөт",
+    "premium.examples_hint":
+      "Алты дизайн азыр эле акысыз. Премиум эксклюзивдүү дизайндарды, фото-үлгүлөрдү жана заказ боюнча жасалгалоону кошот.",
+    "premium.examples_demo": "Мисалды ачуу →",
   },
 } as const;
 

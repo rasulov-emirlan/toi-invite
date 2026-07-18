@@ -61,11 +61,9 @@ docker compose up -d --build
 `/premium` shows the tiers (free · Премиум 990 сом · Про 1490 сом) and captures
 **interest** — name + WhatsApp number + chosen tier — into a `premium_interest`
 table via `POST /api/premium-interest`. No real charge runs yet; it measures
-willingness-to-pay before wiring mbank/FreedomPay. Read the leads with:
-
-```bash
-docker exec toi-invite node -e "const d=new(require('better-sqlite3'))('/data/toi.db');console.table(d.prepare('SELECT created_at,tier,name,phone,comment FROM premium_interest ORDER BY id DESC').all())"
-```
+willingness-to-pay before wiring mbank/FreedomPay. With `ADMIN_TOKEN` set, view
+leads at `/premium/leads?token=<ADMIN_TOKEN>` and download CSV at
+`/api/premium-leads?token=<ADMIN_TOKEN>`.
 
 ## Not built yet (v0)
 

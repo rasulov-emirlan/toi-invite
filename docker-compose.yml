@@ -6,6 +6,7 @@ services:
     environment:
       - APP_BASE_URL=https://toi.night.enkiduck.com
       - DB_PATH=/data/toi.db
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
     volumes:
       - toi-data:/data
     networks: [web]

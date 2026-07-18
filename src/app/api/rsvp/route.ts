@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { validateRsvp } from "@/lib/validation";
 import { isValidSlug } from "@/lib/slug";
-import { addRsvp } from "@/lib/db";
+import { addRsvp, logEvent } from "@/lib/db";
 import { clientIp, rsvpInviteLimiter, rsvpIpLimiter } from "@/lib/ratelimit";
 import type { RsvpInput } from "@/lib/types";
 
@@ -55,6 +55,7 @@ export async function POST(req: Request) {
   try {
     const ok = addRsvp(body.slug, result.value);
     if (!ok) return NextResponse.json({ error: "not found" }, { status: 404 });
+    logEvent("rsvp_submitted", body.slug, result.value.attendance);
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {
     console.error("addRsvp failed", err);

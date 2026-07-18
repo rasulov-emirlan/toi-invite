@@ -1,6 +1,6 @@
 import { translator } from "./i18n";
 import { formatKgTimestamp } from "./calendar";
-import type { Locale, RsvpRecord } from "./types";
+import type { Locale, PremiumInterestRecord, RsvpRecord } from "./types";
 
 /**
  * Field escaping. Two layers:
@@ -49,6 +49,21 @@ export function rsvpsToCsv(rows: RsvpRecord[], locale: Locale): string {
         esc(r.wish ?? ""),
         esc(formatKgTimestamp(r.created_at)),
       ].join(","),
+    );
+  }
+  const BOM = String.fromCharCode(0xfeff);
+  return BOM + lines.join("\r\n") + "\r\n";
+}
+
+/** Render premium-interest leads as CSV for the operator. */
+export function premiumLeadsToCsv(rows: PremiumInterestRecord[]): string {
+  const header = ["created_at", "tier", "name", "phone", "locale", "comment"];
+  const lines = [header.map(esc).join(",")];
+  for (const row of rows) {
+    lines.push(
+      [row.created_at, row.tier, row.name, row.phone, row.locale, row.comment ?? ""]
+        .map(esc)
+        .join(","),
     );
   }
   const BOM = String.fromCharCode(0xfeff);

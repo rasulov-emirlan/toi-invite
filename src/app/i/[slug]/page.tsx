@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getInvite, listGifts } from "@/lib/db";
+import { getInvite, listGifts, logEvent, markInvitedGuestOpened } from "@/lib/db";
 import { toGuestGifts } from "@/lib/gifts";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
@@ -64,17 +64,30 @@ export default async function InvitePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ lang?: string; to?: string }>;
+  searchParams: Promise<{ lang?: string; to?: string; g?: string }>;
 }) {
   const r = await resolve(params, searchParams);
   if (!r) {
     return <NotFound />;
   }
   const { invite, locale, slug } = r;
-  const guestName = sanitizeGuestName((await searchParams).to);
+  const sp = await searchParams;
+  const guestName = sanitizeGuestName(sp.to);
+
+  // Personal links carry ?g=<invited-guest id>: first open stamps the
+  // organizer's board, and the RSVP form links the answer to that guest.
+  const gRaw = Number(sp.g);
+  const invitedGuestId = Number.isInteger(gRaw) && gRaw > 0 ? gRaw : null;
+  if (invitedGuestId) {
+    markInvitedGuestOpened(slug, invitedGuestId);
+    logEvent("guest_opened", slug);
+  }
+  logEvent("invite_view", slug);
   const tpl = getTemplate(invite.template);
   const other: Locale = locale === "ru" ? "ky" : "ru";
-  const toQuery = guestName ? `&to=${encodeURIComponent(guestName)}` : "";
+  const toQuery =
+    (guestName ? `&to=${encodeURIComponent(guestName)}` : "") +
+    (invitedGuestId ? `&g=${invitedGuestId}` : "");
   // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
   // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
   // relative.
@@ -107,6 +120,7 @@ export default async function InvitePage({
           mode="live"
           slug={slug}
           guestName={guestName || undefined}
+          invitedGuestId={invitedGuestId ?? undefined}
           shareBase={shareBase}
           giftsSlot={
             gifts.length > 0 ? (
