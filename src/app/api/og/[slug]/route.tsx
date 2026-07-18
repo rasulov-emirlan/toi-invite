@@ -7,6 +7,7 @@ import { isValidSlug } from "@/lib/slug";
 import { isLocale } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
 import { displayNames, eventLabel, formatEventDate } from "@/lib/invite-view";
+import { clientKey, ogLimiter } from "@/lib/ratelimit";
 import type { Locale } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -62,6 +63,14 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
+  const rl = ogLimiter.check(clientKey(req, "og"), Date.now());
+  if (!rl.allowed) {
+    return new Response("rate limited", {
+      status: 429,
+      headers: { "Retry-After": String(rl.retryAfterSec) },
+    });
+  }
+
   const { slug } = await params;
   if (!isValidSlug(slug)) return new Response("not found", { status: 404 });
   const invite = getInvite(slug);

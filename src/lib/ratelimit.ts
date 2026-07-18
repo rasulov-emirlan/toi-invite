@@ -120,3 +120,7 @@ export const trackLimiter = new TokenBucketLimiter(60, 2);
 
 // Photo uploads: heavier than any other write — keep the bucket small.
 export const photoUploadLimiter = new TokenBucketLimiter(10, 1 / 10);
+
+// OG-image rendering burns real CPU (satori + JPEG transcode). WhatsApp/TG
+// fetch once per share; humans almost never hit it directly.
+export const ogLimiter = new TokenBucketLimiter(30, 1);
