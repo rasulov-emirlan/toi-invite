@@ -15,7 +15,7 @@ export type TemplateKey =
   | "ornament_emerald"
   | "ornament_rose";
 
-export type PremiumTierKey = "free" | "premium" | "pro";
+export type PremiumTierKey = "free" | "premium" | "pro" | "concierge";
 
 export type Attendance = "yes" | "no";
 

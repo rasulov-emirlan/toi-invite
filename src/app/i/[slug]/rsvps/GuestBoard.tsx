@@ -27,31 +27,68 @@ export default function GuestBoard({
   const [rows, setRows] = useState<GuestBoardRow[]>(initial);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  // Clipboard silently no-ops in some WhatsApp/TG WebViews — fall back to a
+  // selectable input under that guest's card instead of failing quietly.
+  const [copyFallbackId, setCopyFallbackId] = useState<number | null>(null);
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
+
+  /** One name per line — organizers paste whole family lists from Notes.
+   *  Sent as one bulk request (one rate-limit token, one transaction), capped
+   *  at the API's 100-per-request limit. Whatever wasn't added — over-cap
+   *  overflow, capacity-dropped tail, or a full list — stays in the box. */
+  async function addNames(raw: string): Promise<void> {
+    const names = raw
+      .split("\n")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    if (names.length === 0) return;
+    const batch = names.slice(0, 100);
+    const r = await op({ op: "add", names: batch });
+    if (r.status === 409) {
+      setError(tr("rsvps.board_full").replace("{n}", String(names.length)));
+      return;
+    }
+    if (r.status !== 201) return; // error already surfaced; input untouched
+    const added = r.added ?? batch.length;
+    if (added < names.length) {
+      setName(names.slice(added).join("\n"));
+      setError(tr("rsvps.board_full").replace("{n}", String(names.length - added)));
+    } else {
+      setName("");
+    }
+  }
 
   function personalUrl(g: GuestBoardRow): string {
     return `${origin}/i/${slug}?to=${encodeURIComponent(g.name)}&g=${g.token}`;
   }
 
-  async function op(body: Record<string, unknown>): Promise<boolean> {
+  async function op(
+    body: Record<string, unknown>,
+  ): Promise<{ status: number; guests?: GuestBoardRow[]; added?: number }> {
     setBusy(true);
-    setError(false);
+    setError(null);
     try {
       const res = await fetch(`/api/guests/${slug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, ...body }),
       });
-      if (!res.ok) throw new Error(String(res.status));
-      const data = (await res.json()) as { guests: GuestBoardRow[] };
-      setRows(data.guests);
-      return true;
+      let data: { guests?: GuestBoardRow[]; added?: number } = {};
+      try {
+        data = (await res.json()) as typeof data;
+      } catch {
+        /* non-JSON error body */
+      }
+      if (res.ok && data.guests) setRows(data.guests);
+      // 409 gets its specific message from the caller.
+      if (!res.ok && res.status !== 409) setError(tr("rsvps.board_error"));
+      return { status: res.status, ...data };
     } catch {
-      setError(true);
-      return false;
+      setError(tr("rsvps.board_error"));
+      return { status: 0 };
     } finally {
       setBusy(false);
     }
@@ -75,12 +112,14 @@ export default function GuestBoard({
         onSubmit={async (e) => {
           e.preventDefault();
           if (!name.trim() || busy) return;
-          if (await op({ op: "add", name })) setName("");
+          await addNames(name);
         }}
       >
-        <input
+        <textarea
           value={name}
-          maxLength={80}
+          rows={1}
+          maxLength={4000}
+          aria-label={tr("rsvps.personal_name_ph")}
           placeholder={tr("rsvps.personal_name_ph")}
           onChange={(e) => setName(e.target.value)}
         />
@@ -88,10 +127,13 @@ export default function GuestBoard({
           {tr("rsvps.board_add")}
         </button>
       </form>
+      <p className="hint" style={{ margin: "-0.5rem 0 1rem" }}>
+        {tr("rsvps.board_add_hint")}
+      </p>
 
       {error && (
         <div className="alert" role="alert">
-          {tr("gifts.error")}
+          {error}
         </div>
       )}
 
@@ -133,9 +175,10 @@ export default function GuestBoard({
                       try {
                         await navigator.clipboard.writeText(url);
                         setCopiedId(g.id);
+                        setCopyFallbackId(null);
                         setTimeout(() => setCopiedId(null), 1500);
                       } catch {
-                        /* clipboard blocked */
+                        setCopyFallbackId(g.id);
                       }
                     }}
                   >
@@ -145,11 +188,22 @@ export default function GuestBoard({
                     type="button"
                     className="btn btn--ghost guestcard__remove"
                     disabled={busy}
-                    onClick={() => void op({ op: "remove", id: g.id })}
+                    onClick={() => {
+                      // One 30px tap away from «Копировать» and irreversible —
+                      // the personal link and open/answer status die with it.
+                      if (window.confirm(tr("rsvps.board_confirm_remove").replace("{name}", g.name))) {
+                        void op({ op: "remove", id: g.id });
+                      }
+                    }}
                   >
                     {tr("gifts.remove")}
                   </button>
                 </div>
+                {copyFallbackId === g.id && (
+                  <div className="linkrow" style={{ marginTop: "0.5rem" }}>
+                    <input readOnly value={url} onFocus={(e) => e.target.select()} />
+                  </div>
+                )}
               </li>
             );
           })}

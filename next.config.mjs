@@ -10,7 +10,10 @@ const nextConfig = {
     return [
       {
         source: "/:path*",
-        headers: [{ key: "Referrer-Policy", value: "same-origin" }],
+        headers: [
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
       },
     ];
   },

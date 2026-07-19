@@ -41,6 +41,11 @@ function loadFonts() {
         weight,
       })),
     );
+    // A transient FS error must not poison the cache with a rejected promise
+    // forever (every OG render would 500 until restart) — drop and retry later.
+    fontsPromise.catch(() => {
+      fontsPromise = null;
+    });
   }
   return fontsPromise;
 }
@@ -54,6 +59,7 @@ function heroDataUri(heroImage: string): Promise<string> {
     p = readFile(join(process.cwd(), "public", heroImage)).then(
       (buf) => `data:image/jpeg;base64,${buf.toString("base64")}`,
     );
+    p.catch(() => heroCache.delete(heroImage));
     heroCache.set(heroImage, p);
   }
   return p;
@@ -68,8 +74,11 @@ const jpegCache = new Map<string, Buffer>();
 const JPEG_CACHE_MAX = 300;
 
 // At most two renders in flight — one container, satori is CPU-bound.
+// Same-key fetchers (WhatsApp + Telegram hitting a freshly shared invite)
+// share one in-flight render instead of each burning a slot.
 let activeRenders = 0;
 const MAX_CONCURRENT_RENDERS = 2;
+const inflight = new Map<string, Promise<Buffer>>();
 
 export async function GET(
   req: Request,
@@ -100,14 +109,25 @@ export async function GET(
   const cacheKey = [slug, locale, invite.template, label, names, when, venueName].join("|");
   const cached = jpegCache.get(cacheKey);
   if (cached) return jpegResponse(cached);
+  const pending = inflight.get(cacheKey);
+  if (pending) {
+    try {
+      return jpegResponse(await pending);
+    } catch {
+      return new Response("render failed", { status: 500 });
+    }
+  }
   if (activeRenders >= MAX_CONCURRENT_RENDERS) {
     return new Response("busy", { status: 503, headers: { "Retry-After": "3" } });
   }
   activeRenders++;
+  const job = render(cacheKey);
+  inflight.set(cacheKey, job);
   try {
-    return jpegResponse(await render(cacheKey));
+    return jpegResponse(await job);
   } finally {
     activeRenders--;
+    inflight.delete(cacheKey);
   }
 
   async function render(key: string): Promise<Buffer> {

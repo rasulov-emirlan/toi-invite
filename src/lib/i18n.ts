@@ -17,6 +17,10 @@ const strings = {
   ru: {
     "brand.name": "Той-Invite",
 
+    "meta.title": "Той-Invite — онлайн-пригласительный на той",
+    "meta.description":
+      "Создайте красивое приглашение на той за 5 минут. Кыргызча жана орусча, с картой, календарём и учётом гостей.",
+    "landing.pricing_title": "0 сом — всё основное бесплатно",
     "landing.kicker": "ОНЛАЙН-ПРИГЛАСИТЕЛЬНЫЕ",
     "landing.title": "Пригласительный на той за 5 минут",
     "landing.subtitle":
@@ -61,7 +65,7 @@ const strings = {
     "create.field_venue": "Место проведения",
     "create.field_map": "Ссылка на 2GIS (необязательно)",
     "create.field_map_hint":
-      "Вставьте ссылку на точку в 2GIS — гости откроют карту одним касанием.",
+      "В 2GIS найдите зал → «Поделиться» → «Скопировать ссылку» и вставьте сюда. Гости откроют карту одним касанием.",
     "create.field_greeting": "Приветствие гостям",
     "create.field_greeting_hint": "Короткое тёплое слово. Можно оставить как есть.",
     "create.field_template": "Шаблон",
@@ -79,6 +83,12 @@ const strings = {
     "create.view_invite": "Открыть приглашение",
     "create.create_another": "Создать ещё одно",
     "create.share_whatsapp": "Поделиться в WhatsApp",
+    "create.share_telegram": "Поделиться в Telegram",
+    "create.error_fields": "Проверьте поля: {fields}",
+    "create.preview_toggle": "Предпросмотр",
+    "create.preview_close": "Закрыть предпросмотр",
+    "create.send_self": "Отправить ссылку себе в WhatsApp",
+    "create.send_self_text": "Моя ссылка организатора Той·Invite (не отправлять гостям):",
     "create.share_text": "Мы вас приглашаем на той! 🎉",
 
     "invite.when": "Когда",
@@ -101,6 +111,10 @@ const strings = {
     "invite.rsvp_thanks_no": "Спасибо, что дали знать. Будем скучать!",
     "invite.rsvp_error": "Не удалось отправить. Попробуйте ещё раз.",
     "invite.rsvp_rate_limited": "Слишком много ответов подряд. Подождите {n} с и попробуйте снова.",
+    "invite.rsvp_hint_choice": "Сначала выберите ответ выше",
+    "invite.rsvp_hint_name": "Напишите ваше имя — и можно отправлять",
+    "invite.rsvp_closed": "Приём ответов завершён. Если планы изменились — свяжитесь с организатором.",
+    "invite.rsvp_jump": "Ответить на приглашение",
     "invite.salutation": "Рады видеть вас, {name}!",
     "invite.not_found": "Приглашение не найдено",
     "invite.not_found_body": "Возможно, ссылка неверна или приглашение удалено.",
@@ -242,6 +256,10 @@ const strings = {
     "rsvps.board_hint":
       "Добавьте имена — каждому готова именная ссылка. Видно, кто открыл приглашение и кто ответил.",
     "rsvps.board_add": "Добавить",
+    "rsvps.board_add_hint": "Можно вставить сразу список — каждое имя с новой строки.",
+    "rsvps.board_error": "Не получилось обновить список гостей. Попробуйте ещё раз.",
+    "rsvps.board_full": "Лимит — 300 гостей на приглашение. Не добавлено имён: {n} (они остались в поле).",
+    "rsvps.board_confirm_remove": "Удалить гостя «{name}»? Его личная ссылка перестанет работать.",
     "rsvps.board_empty":
       "Пока никого нет. Добавьте первых гостей — и отправьте каждому его ссылку.",
     "rsvps.st_not_opened": "Не открыл(а)",
@@ -260,6 +278,10 @@ const strings = {
   ky: {
     "brand.name": "Той-Invite",
 
+    "meta.title": "Той-Invite — тойго онлайн чакыруу",
+    "meta.description":
+      "5 мүнөттө тойго кооз чакыруу жасаңыз. Кыргызча жана орусча, карта, календарь жана меймандарды эсепке алуу менен.",
+    "landing.pricing_title": "0 сом — негизгинин баары бекер",
     "landing.kicker": "ОНЛАЙН ЧАКЫРУУ КАГАЗ",
     "landing.title": "Тойго чакыруу 5 мүнөттө",
     "landing.subtitle":
@@ -304,7 +326,7 @@ const strings = {
     "create.field_venue": "Өткөрүлүүчү жер",
     "create.field_map": "2GIS шилтемеси (милдеттүү эмес)",
     "create.field_map_hint":
-      "2GIS'теги чекитке шилтеме коюңуз — меймандар картаны бир жолу басып ачышат.",
+      "2GIS'тен залды таап, «Бөлүшүү» аркылуу шилтемесин көчүрүп, ушул жерге коюңуз. Меймандар картаны бир басып эле ачышат.",
     "create.field_greeting": "Меймандарга кайрылуу",
     "create.field_greeting_hint": "Кыска жылуу сөз. Ушул бойдон калтырса болот.",
     "create.field_template": "Үлгү",
@@ -322,6 +344,12 @@ const strings = {
     "create.view_invite": "Чакырууну ачуу",
     "create.create_another": "Дагы бирди түзүү",
     "create.share_whatsapp": "WhatsApp'та бөлүшүү",
+    "create.share_telegram": "Telegram'да бөлүшүү",
+    "create.error_fields": "Талааларды текшериңиз: {fields}",
+    "create.preview_toggle": "Алдын ала көрүү",
+    "create.preview_close": "Көрүүнү жабуу",
+    "create.send_self": "Шилтемени өзүмө WhatsApp'ка жөнөтүү",
+    "create.send_self_text": "Менин Той·Invite уюштуруучу шилтемем (конокторго жибербеңиз):",
     "create.share_text": "Сиздерди тойго чакырабыз! 🎉",
 
     "invite.when": "Качан",
@@ -344,6 +372,10 @@ const strings = {
     "invite.rsvp_thanks_no": "Билдиргениңизге рахмат. Сагынабыз!",
     "invite.rsvp_error": "Жөнөтүлбөй калды. Кайра аракет кылыңыз.",
     "invite.rsvp_rate_limited": "Удаама-удаа өтө көп жооп. {n} с күтүп, кайра аракет кылыңыз.",
+    "invite.rsvp_hint_choice": "Адегенде жогорудагы жооптордун бирин тандаңыз",
+    "invite.rsvp_hint_name": "Атыңызды жазыңыз — анан жөнөтсө болот",
+    "invite.rsvp_closed": "Жоопторду кабыл алуу аяктады. Пландарыңыз өзгөрсө, уюштуруучуга кайрылыңыз.",
+    "invite.rsvp_jump": "Чакырууга жооп берүү",
     "invite.salutation": "Урматтуу {name}!",
     "invite.not_found": "Чакыруу табылган жок",
     "invite.not_found_body": "Балким шилтеме туура эмес же чакыруу өчүрүлгөн.",
@@ -485,6 +517,10 @@ const strings = {
     "rsvps.board_hint":
       "Ысымдарды кошуңуз — ар бирине аты жазылган шилтеме даяр. Ким ачканы жана ким жооп бергени көрүнөт.",
     "rsvps.board_add": "Кошуу",
+    "rsvps.board_add_hint": "Тизмени бүтүндөй коюп койсоңуз да болот — ар бир ысымды жаңы саптан жазыңыз.",
+    "rsvps.board_error": "Меймандар тизмесин жаңыртуу оңунан чыккан жок. Кайра аракет кылыңыз.",
+    "rsvps.board_full": "Чек — бир чакырууга 300 мейман. Кошулбай калган ысымдар: {n} (талаада калды).",
+    "rsvps.board_confirm_remove": "«{name}» меймандын жеке шилтемеси иштебей калат. Өчүрөсүзбү?",
     "rsvps.board_empty":
       "Азырынча эч ким жок. Алгачкы меймандарды кошуп, ар бирине шилтемесин жөнөтүңүз.",
     "rsvps.st_not_opened": "Ачкан жок",

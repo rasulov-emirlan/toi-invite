@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { validateRsvp } from "@/lib/validation";
 import { isValidSlug } from "@/lib/slug";
-import { addRsvp, logEvent } from "@/lib/db";
+import { addRsvp, getInvite, logEvent } from "@/lib/db";
+import { rsvpClosed } from "@/lib/calendar";
 import { clientIp, rsvpInviteLimiter, rsvpIpLimiter } from "@/lib/ratelimit";
 import type { RsvpInput } from "@/lib/types";
 
@@ -50,6 +51,13 @@ export async function POST(req: Request) {
   const result = validateRsvp(body);
   if (!result.ok) {
     return NextResponse.json({ error: "validation", fields: result.errors }, { status: 400 });
+  }
+
+  // The page hides the form once RSVPs close; the API must agree with it.
+  const invite = getInvite(body.slug);
+  if (!invite) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (rsvpClosed(invite.event_date, invite.event_time, invite.rsvp_deadline, now)) {
+    return NextResponse.json({ error: "closed" }, { status: 410 });
   }
 
   try {

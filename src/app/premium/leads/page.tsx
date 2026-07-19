@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listPremiumInterest } from "@/lib/db";
 import { isAdminToken } from "@/lib/admin";
+import Forbidden from "@/components/Forbidden";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -14,12 +15,7 @@ export default async function PremiumLeadsPage({
   const { token } = await searchParams;
 
   if (!isAdminToken(token)) {
-    return (
-      <main className="wrap wrap--narrow" style={{ paddingTop: "6rem", textAlign: "center" }}>
-        <span className="kicker kicker--red">403</span>
-        <h1 style={{ margin: "1rem 0" }}>Доступ закрыт</h1>
-      </main>
-    );
+    return <Forbidden message="Доступ закрыт" />;
   }
 
   const rows = listPremiumInterest();

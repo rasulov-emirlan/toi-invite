@@ -9,7 +9,7 @@ export interface RateLimitResult {
 /**
  * In-memory token-bucket limiter. Single on-box container → process-global state
  * is enough; no external store. `now` is injected so the refill logic is
- * deterministically testable. Idle buckets are pruned so the map can't grow
+ * deterministically testable. A hard key cap bounds the map so it can't grow
  * unbounded from one-off IPs.
  */
 export class TokenBucketLimiter {
@@ -18,7 +18,6 @@ export class TokenBucketLimiter {
   constructor(
     private readonly capacity: number,
     private readonly refillPerSec: number,
-    private readonly idleTtlMs = 10 * 60_000,
     private readonly maxKeys = 20_000,
   ) {}
 
@@ -51,13 +50,6 @@ export class TokenBucketLimiter {
     return { allowed: false, retryAfterSec, remaining: 0 };
   }
 
-  /** Drop buckets untouched for longer than the idle TTL. */
-  prune(nowMs: number): void {
-    for (const [k, v] of this.buckets) {
-      if (nowMs - v.last > this.idleTtlMs) this.buckets.delete(k);
-    }
-  }
-
   /** Test/introspection helper. */
   size(): number {
     return this.buckets.size;
@@ -75,9 +67,14 @@ export class TokenBucketLimiter {
  * no IP header is present (all such requests then share one bucket).
  */
 export function clientIp(req: Request): string {
-  const real = req.headers.get("x-real-ip")?.trim();
+  return ipFromHeaders(req.headers);
+}
+
+/** Same trust logic for contexts that only have Headers (server components). */
+export function ipFromHeaders(headers: Headers): string {
+  const real = headers.get("x-real-ip")?.trim();
   if (real) return real;
-  const hops = (req.headers.get("x-forwarded-for") ?? "")
+  const hops = (headers.get("x-forwarded-for") ?? "")
     .split(",")
     .map((h) => h.trim())
     .filter(Boolean);

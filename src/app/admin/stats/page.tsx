@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { statsSummary } from "@/lib/db";
 import { isAdminToken } from "@/lib/admin";
+import Forbidden from "@/components/Forbidden";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +23,7 @@ export default async function StatsPage({
 }) {
   const { token } = await searchParams;
   if (!isAdminToken(token ?? null)) {
-    return (
-      <main className="wrap wrap--narrow" style={{ paddingTop: "6rem", textAlign: "center" }}>
-        <span className="kicker kicker--red">403</span>
-        <h1 style={{ margin: "1rem 0" }}>Доступ закрыт</h1>
-      </main>
-    );
+    return <Forbidden message="Доступ закрыт" />;
   }
 
   const s = statsSummary();

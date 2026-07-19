@@ -7,7 +7,7 @@
   --gray-800: #262626;
   --red: #e63946;
 
-  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-display: "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
@@ -38,11 +38,27 @@ h3 {
   font-weight: 700;
   line-height: 1.1;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 a {
   color: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+.invite a:focus-visible,
+.invite button:focus-visible,
+.invite input:focus-visible,
+.invite textarea:focus-visible {
+  outline-color: var(--ac);
 }
 
 .kicker {
@@ -169,6 +185,57 @@ a {
   color: #d9d9d9;
   font-size: 1.1rem;
   margin: 0 0 2rem;
+}
+
+/* hero: pitch on the left, a peek at a real invite on the right */
+.hero__grid {
+  display: grid;
+  gap: 3rem;
+  align-items: start;
+}
+
+.hero__peek {
+  display: block;
+  position: relative;
+  max-height: 26rem;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.hero__peek::after {
+  /* fade the card into the ink band so the crop reads as intentional */
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 7rem;
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0), var(--ink));
+  pointer-events: none;
+}
+
+.hero__peek-card {
+  pointer-events: none;
+}
+
+.hero__peek .invite__card {
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.6);
+}
+
+@media (min-width: 64rem) {
+  .hero__grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 4rem;
+  }
+
+  .hero__peek {
+    margin-top: -1rem;
+  }
+}
+
+@media (max-width: 63.99rem) {
+  .hero__peek {
+    max-width: 26rem;
+    max-height: 20rem;
+  }
 }
 
 .section {
@@ -320,7 +387,7 @@ a {
 .choice {
   border: 1px solid var(--gray-300);
   background: #fff;
-  padding: 0.55rem 0.9rem;
+  padding: 0.6rem 1rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   cursor: pointer;
@@ -437,8 +504,10 @@ a {
 }
 
 .myinvites__links a {
+  display: inline-block;
+  padding: 0.55rem 0;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gray-800);
@@ -478,10 +547,13 @@ a {
 
 .linkrow input {
   flex: 1;
+  min-width: 0;
   padding: 0.6rem 0.7rem;
   border: 1px solid var(--gray-300);
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  /* 16px floor: smaller inputs make iOS/WebViews zoom the page on focus,
+     right at the "copy your organizer link" moment */
+  font-size: 1rem;
   background: var(--gray-100);
 }
 
@@ -544,6 +616,45 @@ a {
   }
 }
 
+/* mobile preview toggle + full-screen preview overlay */
+.preview-fab {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 40;
+}
+
+.preview-fab .btn {
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 64rem) {
+  .preview-fab {
+    display: none;
+  }
+}
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  background: rgba(10, 10, 10, 0.5);
+}
+
+.preview-overlay .invite {
+  min-height: 100%;
+}
+
+.preview-overlay__bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+}
+
 /* ---------- demo page banner ---------- */
 .demo-banner {
   display: flex;
@@ -590,8 +701,11 @@ a {
 }
 
 .invite__lang a {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+  display: inline-block;
+  padding: 0.6rem 0.25rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   text-decoration: none;
@@ -638,7 +752,8 @@ a {
 }
 
 .invite__event {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.78rem;
@@ -692,7 +807,8 @@ a {
 }
 
 .detail__label {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 0.7rem;
@@ -733,8 +849,9 @@ a {
 }
 
 .countdown__label {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--tmuted);
@@ -752,10 +869,10 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.78rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-size: 0.95rem;
   padding: 0.75rem 1.2rem;
   border: 1.5px solid var(--ac);
   color: var(--ac);
@@ -779,6 +896,16 @@ a {
   filter: brightness(0.92);
 }
 
+.btn-ac:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ac:disabled:hover {
+  background: var(--ac);
+  filter: none;
+}
+
 /* rsvp block on invite page */
 .rsvp {
   margin-top: 2.5rem;
@@ -792,6 +919,14 @@ a {
   text-align: center;
   color: var(--tink);
   margin-bottom: 1.5rem;
+}
+
+.invite .field > label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.92rem;
 }
 
 .rsvp .field label {
@@ -808,11 +943,10 @@ a {
   border: 1.5px solid var(--soft);
   background: var(--tsurface);
   color: var(--tink);
-  padding: 0.7rem;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
+  padding: 0.8rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 140ms ease;
 }
@@ -828,6 +962,48 @@ a {
   font-size: 1.15rem;
   color: var(--ac);
   padding: 1.5rem 0;
+}
+
+.rsvp-why {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--tmuted);
+  margin: 0.35rem 0 0;
+}
+
+.rsvp-closed {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--tmuted);
+  max-width: 36ch;
+  margin: 0.5rem auto 0;
+}
+
+/* guest-count segmented row: six compact cells, wraps on tiny screens */
+.attend--count {
+  flex-wrap: wrap;
+}
+
+.attend--count button {
+  flex: 1 1 3rem;
+  min-width: 3rem;
+}
+
+/* sticky "answer" shortcut — the form is the last block of a long page */
+.rsvp-jump {
+  position: fixed;
+  bottom: 1rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.rsvp-jump .btn-ac {
+  pointer-events: auto;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
 }
 
 /* gift wishlist on the invite */
@@ -881,8 +1057,9 @@ a {
 }
 
 .gifts__taken {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--tmuted);
@@ -985,8 +1162,8 @@ a {
 .invite__foot {
   text-align: center;
   padding: 1.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-family: var(--font-body);
+  font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--tmuted);
@@ -996,9 +1173,14 @@ a {
   color: var(--ac);
 }
 
-/* comfortable touch targets for the guest page's interactive elements */
+/* comfortable touch targets for every interactive element (44px minimum) */
+.btn,
 .btn-ac,
-.rsvp .attend button {
+.choice,
+.copybtn,
+.rsvp .attend button,
+.giftrows__actions button,
+.guestcard__actions .btn {
   min-height: 44px;
 }
 
@@ -1258,8 +1440,9 @@ table.rsvps th {
   border-bottom: none;
 }
 .program__time {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.85rem;
   color: var(--ac);
   min-width: 3.2rem;
 }
@@ -1314,8 +1497,23 @@ table.rsvps th {
   gap: 0.5rem;
   margin: 1rem 0;
 }
-.guestboard .addrow input {
+.guestboard .addrow input,
+.guestboard .addrow textarea {
   flex: 1;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  min-height: 44px;
+  resize: vertical;
+}
+
+.guestboard .addrow textarea:focus,
+.guestboard .addrow input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
 }
 .guestlist {
   list-style: none;

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import {
-  addInvitedGuest,
+  addInvitedGuests,
   deleteInvitedGuest,
   getInvite,
   listGuestBoard,
 } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
+import { LIMITS } from "@/lib/validation";
 import { tokensMatch } from "@/lib/token";
 import { clientKey, inviteEditLimiter } from "@/lib/ratelimit";
 
@@ -16,10 +17,14 @@ interface Body {
   token?: string;
   op?: string;
   name?: string;
+  names?: unknown;
   id?: number;
 }
 
-const MAX_GUEST_NAME = 80;
+/** One pasted list = one request = one rate-limit token (bounded per call;
+ *  the 300-per-invite cap in addInvitedGuests still applies). */
+const MAX_BULK_NAMES = 100;
+
 
 /** Organizer guest-list management: add / remove invited guests. */
 export async function POST(
@@ -55,13 +60,33 @@ export async function POST(
   }
 
   if (body.op === "add") {
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    if (name.length < 1 || name.length > MAX_GUEST_NAME) {
+    // Accept either one name or a pasted list — a loop of per-name requests
+    // would eat the organizer's own rate limit halfway through a family list.
+    const raw = Array.isArray(body.names)
+      ? body.names
+      : typeof body.name === "string"
+        ? [body.name]
+        : [];
+    if (raw.length < 1 || raw.length > MAX_BULK_NAMES) {
+      return NextResponse.json({ error: "validation", fields: ["names"] }, { status: 400 });
+    }
+    const names = raw
+      .filter((n): n is string => typeof n === "string")
+      .map((n) => n.trim())
+      .filter(Boolean);
+    // All-or-nothing on validity: silently dropping a too-long name from the
+    // middle of a pasted list would desync the client's "what failed" math.
+    if (names.length !== raw.length || names.some((n) => n.length > LIMITS.guestName)) {
       return NextResponse.json({ error: "validation", fields: ["name"] }, { status: 400 });
     }
-    const id = addInvitedGuest(slug, name);
-    if (id == null) return NextResponse.json({ error: "list full" }, { status: 409 });
-    return NextResponse.json({ ok: true, id, guests: listGuestBoard(slug) }, { status: 201 });
+    // Inserted in order — `added` tells the client exactly which tail was
+    // dropped for capacity, so nothing is lost silently.
+    const added = addInvitedGuests(slug, names);
+    if (added === 0) return NextResponse.json({ error: "list full" }, { status: 409 });
+    return NextResponse.json(
+      { ok: true, added, guests: listGuestBoard(slug) },
+      { status: 201 },
+    );
   }
 
   if (body.op === "remove") {

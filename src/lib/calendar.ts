@@ -44,6 +44,27 @@ export function eventInstant(
   return { start, end };
 }
 
+/**
+ * RSVPs close at the end of the deadline day (KG time) when a deadline is set,
+ * and in any case once the event itself has ended — a card people forward for
+ * years must not keep collecting answers.
+ */
+export function rsvpClosed(
+  eventDate: string,
+  eventTime: string,
+  deadline: string | null,
+  nowMs: number,
+): boolean {
+  const { end } = eventInstant(eventDate, eventTime);
+  if (nowMs > end.getTime()) return true;
+  if (deadline && /^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+    // Midnight after the deadline day — the whole stated day stays open.
+    const { end: deadlineEnd } = eventInstant(deadline, "00:00", 24);
+    if (nowMs > deadlineEnd.getTime()) return true;
+  }
+  return false;
+}
+
 export interface CalendarEvent {
   title: string;
   details: string;

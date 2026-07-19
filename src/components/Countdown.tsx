@@ -25,8 +25,21 @@ export default function Countdown({
     return () => clearInterval(id);
   }, []);
 
-  // Avoid hydration mismatch: render nothing until mounted on the client.
-  if (now === null) return null;
+  // Pre-mount: render the shell with blank digits (same height as the real
+  // thing) instead of nothing — no mid-page layout jump when JS arrives late
+  // on a slow device. Hydration stays deterministic because no time is read.
+  if (now === null) {
+    return (
+      <div className="countdown" aria-hidden="true">
+        {(["day", "hour", "minute"] as const).map((u) => (
+          <div className="countdown__unit" key={u}>
+            <div className="countdown__num">&nbsp;</div>
+            <div className="countdown__label">&nbsp;</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   const diff = targetMs - now;
   // Long past: an old invite shouldn't celebrate forever.

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { getInvite, listGifts, listGuestBoard, listRsvps } from "@/lib/db";
-import { isValidSlug } from "@/lib/slug";
+import { listGifts, listGuestBoard, listRsvps } from "@/lib/db";
+import { requireOrganizer } from "@/lib/organizer";
+import Forbidden from "@/components/Forbidden";
 import { translator } from "@/lib/i18n";
 import { computeRsvpStats } from "@/lib/stats";
 import { displayNames, eventLabel } from "@/lib/invite-view";
 import { formatKgTimestamp } from "@/lib/calendar";
-import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
 import ShareBar from "./ShareBar";
 import GiftManager from "./GiftManager";
@@ -24,28 +24,11 @@ export default async function RsvpsPage({
   const { slug } = await params;
   const { token } = await searchParams;
 
-  const invite = isValidSlug(slug) ? getInvite(slug) : null;
+  const invite = requireOrganizer(slug, token);
   const locale: Locale = invite?.locale ?? "ru";
   const tr = translator(locale);
 
-  // Token gate — length-safe constant-time compare; wrong or missing token reveals
-  // nothing. `token` can also arrive as an array (duplicated param); tokensMatch
-  // returns false for any non-string, so the gate holds.
-  const authorized = invite != null && tokensMatch(token, invite.organizer_token);
-
-  if (!invite || !authorized) {
-    return (
-      <main className="wrap wrap--narrow" style={{ paddingTop: "6rem", textAlign: "center" }}>
-        <span className="kicker kicker--red">403</span>
-        <h1 style={{ margin: "1rem 0" }}>{tr("rsvps.forbidden")}</h1>
-        <p style={{ marginTop: "2rem" }}>
-          <Link href="/" className="btn">
-            Той·Invite →
-          </Link>
-        </p>
-      </main>
-    );
-  }
+  if (!invite) return <Forbidden message={tr("rsvps.forbidden")} withHomeLink />;
 
   const rows = listRsvps(slug);
   const stats = computeRsvpStats(rows);

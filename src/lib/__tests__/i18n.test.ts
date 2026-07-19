@@ -46,12 +46,11 @@ describe("event type config completeness", () => {
 });
 
 describe("template config completeness", () => {
-  it("provides names in both locales plus og and hero images", () => {
+  it("provides names in both locales plus hero images", () => {
     for (const tpl of TEMPLATES) {
       for (const loc of LOCALES) {
         expect(tpl.names[loc]?.trim().length, `${tpl.key} name ${loc}`).toBeGreaterThan(0);
       }
-      expect(tpl.ogImage).toMatch(/^\/(og|templates)\/.+\.(png|jpe?g)$/);
       expect(tpl.heroImage).toMatch(/^\/templates\/.+\.(png|jpe?g)$/);
       for (const c of Object.values(tpl.palette)) {
         expect(c, `${tpl.key} palette color`).toMatch(/^#[0-9a-fA-F]{6}$/);

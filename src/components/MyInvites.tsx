@@ -19,16 +19,20 @@ export default function MyInvites({
   serverInvites?: MyInvite[];
 }) {
   const tr = translator(locale);
-  const [invites, setInvites] = useState<MyInvite[] | null>(null);
+  // The server-known list renders immediately (SSR — no section popping in
+  // after mount and shoving the page around); localStorage-only invites merge
+  // in on the client.
+  const [invites, setInvites] = useState<MyInvite[]>(serverInvites);
   useEffect(() => {
     const local = listMyInvites();
     const seen = new Set(serverInvites.map((i) => i.slug));
-    setInvites([...serverInvites, ...local.filter((i) => !seen.has(i.slug))]);
+    const merged = [...serverInvites, ...local.filter((i) => !seen.has(i.slug))];
+    if (merged.length !== serverInvites.length) setInvites(merged);
     // serverInvites comes from the server render and never changes client-side.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!invites || invites.length === 0) return null;
+  if (invites.length === 0) return null;
 
   return (
     <section className="section">

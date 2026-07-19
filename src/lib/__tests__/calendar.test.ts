@@ -4,6 +4,7 @@ import {
   formatKgTimestamp,
   googleCalendarUrl,
   icsContent,
+  rsvpClosed,
   toIcsUtc,
 } from "../calendar";
 
@@ -84,5 +85,30 @@ describe("formatKgTimestamp", () => {
 
   it("returns the input unchanged if it is not a recognised timestamp", () => {
     expect(formatKgTimestamp("not-a-date")).toBe("not-a-date");
+  });
+});
+
+describe("rsvpClosed", () => {
+  const kg = (date: string, time: string) => eventInstant(date, time, 0).start.getTime();
+
+  it("stays open before the event with no deadline", () => {
+    expect(rsvpClosed("2026-09-20", "18:00", null, kg("2026-09-01", "12:00"))).toBe(false);
+  });
+
+  it("closes once the event has ended", () => {
+    expect(rsvpClosed("2026-09-20", "18:00", null, kg("2026-09-21", "12:00"))).toBe(true);
+  });
+
+  it("stays open during the event itself", () => {
+    expect(rsvpClosed("2026-09-20", "18:00", null, kg("2026-09-20", "19:00"))).toBe(false);
+  });
+
+  it("closes after the deadline day ends (KG time), not during it", () => {
+    expect(rsvpClosed("2026-09-20", "18:00", "2026-09-10", kg("2026-09-10", "23:00"))).toBe(false);
+    expect(rsvpClosed("2026-09-20", "18:00", "2026-09-10", kg("2026-09-11", "00:30"))).toBe(true);
+  });
+
+  it("ignores a malformed deadline", () => {
+    expect(rsvpClosed("2026-09-20", "18:00", "not-a-date", kg("2026-09-19", "12:00"))).toBe(false);
   });
 });

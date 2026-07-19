@@ -1,19 +1,27 @@
 import type { Metadata } from "next";
+import { cache } from "react";
+import { preload } from "react-dom";
 import Link from "next/link";
-import { getInvite, listGifts, logEvent } from "@/lib/db";
+import { getInvite, listGifts } from "@/lib/db";
+import { logPageView } from "@/lib/pageview";
+import { BASE_URL } from "@/lib/base-url";
 import { GUEST_LINK_TOKEN_RE } from "@/lib/validation";
 import StampOpen from "@/components/StampOpen";
 import { toGuestGifts } from "@/lib/gifts";
 import { isValidSlug } from "@/lib/slug";
 import { sanitizeGuestName } from "@/lib/personalize";
 import { isLocale, translator } from "@/lib/i18n";
-import { getTemplate } from "@/lib/templates";
+import { getTemplate, paletteVars } from "@/lib/templates";
 import { inviteTitle, ogDescription } from "@/lib/invite-view";
 import type { Locale } from "@/lib/types";
 import InviteCard from "@/components/InviteCard";
 import GiftList from "@/components/GiftList";
 
 export const dynamic = "force-dynamic";
+
+// generateMetadata and the page body both need the invite — one query per
+// request, not two.
+const cachedGetInvite = cache(getInvite);
 
 async function resolve(
   params: Promise<{ slug: string }>,
@@ -22,7 +30,7 @@ async function resolve(
   const { slug } = await params;
   const sp = searchParams ? await searchParams : {};
   if (!isValidSlug(slug)) return null;
-  const invite = getInvite(slug);
+  const invite = cachedGetInvite(slug);
   if (!invite) return null;
   const locale: Locale = isLocale(sp.lang) ? sp.lang : invite.locale;
   return { invite, locale, slug };
@@ -46,6 +54,9 @@ export async function generateMetadata({
   return {
     title,
     description,
+    // Personal data (names, date, venue) — keep out of search indexes. OG
+    // crawlers don't honor robots meta, so WhatsApp/TG unfurls still work.
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,
@@ -80,28 +91,23 @@ export default async function InvitePage({
   // client-side (StampOpen beacon) — WhatsApp/Telegram preview crawlers fetch
   // these URLs and must not mark a guest as having opened anything.
   const invitedGuest = GUEST_LINK_TOKEN_RE.test(sp.g ?? "") ? (sp.g as string) : null;
-  logEvent("invite_view", slug);
+  await logPageView("invite_view", slug);
   const tpl = getTemplate(invite.template);
+  // The template art is the LCP element (CSS background, invisible to the
+  // browser's preload scanner).
+  preload(tpl.heroImage, { as: "image" });
   const other: Locale = locale === "ru" ? "ky" : "ru";
   const toQuery =
     (guestName ? `&to=${encodeURIComponent(guestName)}` : "") +
     (invitedGuest ? `&g=${invitedGuest}` : "");
-  // Absolute, un-personalized invite URL for forwarding via WhatsApp. Same
-  // absolute fallback as layout.tsx's metadataBase so a forwarded link is never
-  // relative.
-  const shareBase = process.env.APP_BASE_URL ?? "http://localhost:3000";
+  // Absolute, un-personalized invite URL for forwarding via WhatsApp — a
+  // forwarded link must never be relative.
+  const shareBase = BASE_URL;
   // "yours" is per-browser; the server always renders false and the client
   // recovers its own reservations after mount.
   const gifts = toGuestGifts(listGifts(slug), null);
 
-  const paletteStyle = {
-    ["--ac" as string]: tpl.palette.accent,
-    ["--soft" as string]: tpl.palette.accentSoft,
-    ["--tbg" as string]: tpl.palette.bg,
-    ["--tink" as string]: tpl.palette.ink,
-    ["--tmuted" as string]: tpl.palette.muted,
-    ["--tsurface" as string]: tpl.palette.surface,
-  } as React.CSSProperties;
+  const paletteStyle = paletteVars(tpl) as React.CSSProperties;
 
   return (
     <div className="invite" lang={locale} style={paletteStyle}>
