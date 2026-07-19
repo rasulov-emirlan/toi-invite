@@ -15,6 +15,9 @@ export interface PremiumTier {
   priceSom: number;
   /** Free tier is shown for context but cannot be "ordered". */
   orderable: boolean;
+  /** Real Finik checkout allowed — only for tiers whose promises the product
+   *  delivers today. The rest stay lead-capture until their features ship. */
+  payable: boolean;
   /** Highlighted as the recommended tier. */
   popular: boolean;
   names: Record<Locale, string>;
@@ -28,6 +31,7 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     key: "free",
     priceSom: 0,
     orderable: false,
+    payable: false,
     popular: false,
     names: { ru: "Бесплатный", ky: "Акысыз" },
     tagline: { ru: "Всё для одного тоя", ky: "Бир той үчүн баары" },
@@ -54,6 +58,7 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     key: "premium",
     priceSom: 990,
     orderable: true,
+    payable: true,
     popular: true,
     names: { ru: "Премиум", ky: "Премиум" },
     tagline: {
@@ -63,15 +68,15 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     features: {
       ru: [
         "Всё из бесплатного",
-        "Премиум-шаблоны",
         "Без надписи «Той-Invite»",
         "Приоритетная помощь в WhatsApp",
+        "Ранний доступ к новым дизайнам",
       ],
       ky: [
         "Акысыздын баары",
-        "Премиум үлгүлөр",
         "«Той-Invite» жазуусуз",
-        "WhatsApp'та тез жардам",
+        "WhatsApp'та биринчи кезекте жардам",
+        "Жаңы дизайндарга эрте жетки",
       ],
     },
   },
@@ -79,6 +84,7 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     key: "pro",
     priceSom: 1490,
     orderable: true,
+    payable: false,
     popular: false,
     names: { ru: "Про", ky: "Про" },
     tagline: {
@@ -106,6 +112,7 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     key: "concierge",
     priceSom: 1990,
     orderable: true,
+    payable: false,
     popular: false,
     names: { ru: "Под ключ", ky: "Даяр чечим" },
     tagline: {

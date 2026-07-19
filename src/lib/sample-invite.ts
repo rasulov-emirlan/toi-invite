@@ -46,5 +46,6 @@ export function sampleInvite(locale: Locale): InviteDisplay {
           ],
     ),
     photo_id: null,
+    premium_tier: null,
   };
 }

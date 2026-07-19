@@ -50,6 +50,8 @@ export interface InviteRecord {
   photo_id: string | null;
   organizer_ref: string | null;
   created_ref: string | null;
+  /** Paid tier key once a Finik payment for this invite settles. */
+  premium_tier: string | null;
   created_at: string;
 }
 

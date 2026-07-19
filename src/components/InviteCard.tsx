@@ -267,7 +267,9 @@ export default function InviteCard({
         {names}
         {/* The viral loop: every guest is the next organizer. Preview mode has
             no working links; live/demo invite links back to the builder with
-            attribution so guest→create conversion is measurable. */}
+            attribution so guest→create conversion is measurable. Paid tiers
+            bought «Без надписи Той-Invite» — honor it. */}
+        {!invite.premium_tier && (
         <div className="invite__madewith">
           {mode === "preview" ? (
             <span>{tr("invite.made_with")}</span>
@@ -281,6 +283,7 @@ export default function InviteCard({
             </TrackedLink>
           )}
         </div>
+        )}
       </div>
     </article>
   );

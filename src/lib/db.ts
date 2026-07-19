@@ -85,6 +85,24 @@ function db(): Database.Database {
       opened_at   TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_invited_guests_slug ON invited_guests(invite_slug);
+    CREATE TABLE IF NOT EXISTS payments (
+      id           TEXT PRIMARY KEY,
+      -- What the payer's browser sees (thanks page, status poll). Kept
+      -- separate from id: the id is what Finik's webhook authenticates by,
+      -- so the payer must never learn it.
+      view_token   TEXT NOT NULL,
+      tier         TEXT NOT NULL,
+      amount_som   INTEGER NOT NULL,
+      name         TEXT NOT NULL,
+      phone        TEXT NOT NULL,
+      locale       TEXT NOT NULL,
+      invite_slug  TEXT,
+      status       TEXT NOT NULL DEFAULT 'pending',
+      created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at   TEXT,
+      webhook_json TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_view ON payments(view_token);
     CREATE TABLE IF NOT EXISTS events (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       name       TEXT NOT NULL,
@@ -157,6 +175,7 @@ function migrateInvites(handle: Database.Database) {
   add("photo_id", "TEXT");
   add("organizer_ref", "TEXT");
   add("created_ref", "TEXT");
+  add("premium_tier", "TEXT");
   handle.exec(
     `CREATE INDEX IF NOT EXISTS idx_invites_organizer_ref
      ON invites(organizer_ref) WHERE organizer_ref IS NOT NULL`,
@@ -548,6 +567,105 @@ export function listGuestBoard(slug: string): GuestBoardRow[] {
        ORDER BY g.id`,
     )
     .all(slug) as GuestBoardRow[];
+}
+
+// ---------- payments (Finik acquiring) ----------
+
+export type PaymentStatus = "pending" | "succeeded" | "failed";
+
+export interface PaymentRecord {
+  id: string;
+  view_token: string;
+  tier: string;
+  amount_som: number;
+  name: string;
+  phone: string;
+  locale: string;
+  invite_slug: string | null;
+  status: PaymentStatus;
+  created_at: string;
+  updated_at: string | null;
+  webhook_json: string | null;
+}
+
+export function createPayment(rec: {
+  id: string;
+  view_token: string;
+  tier: string;
+  amount_som: number;
+  name: string;
+  phone: string;
+  locale: string;
+  invite_slug: string | null;
+}): void {
+  prep(
+    `INSERT INTO payments (id, view_token, tier, amount_som, name, phone, locale, invite_slug)
+     VALUES (@id, @view_token, @tier, @amount_som, @name, @phone, @locale, @invite_slug)`,
+  ).run(rec);
+}
+
+export function getPayment(id: string): PaymentRecord | null {
+  const row = prep("SELECT * FROM payments WHERE id = ?").get(id) as
+    | PaymentRecord
+    | undefined;
+  return row ?? null;
+}
+
+/** Payer-facing lookup — never exposes more than the record itself. */
+export function getPaymentByViewToken(token: string): PaymentRecord | null {
+  const row = prep("SELECT * FROM payments WHERE view_token = ?").get(token) as
+    | PaymentRecord
+    | undefined;
+  return row ?? null;
+}
+
+/**
+ * Transition pending → final exactly once (a replayed webhook can't flip a
+ * settled payment). `transitioned` is true only for the call that actually
+ * performed the move — retried webhooks must not re-run side effects.
+ */
+export function finalizePayment(
+  id: string,
+  status: "succeeded" | "failed",
+  webhookJson: string | null,
+): { payment: PaymentRecord; transitioned: boolean } | null {
+  const conn = db();
+  const settle = conn.transaction(
+    (): { payment: PaymentRecord; transitioned: boolean } | null => {
+      const info = prep(
+        `UPDATE payments SET status = ?, webhook_json = ?, updated_at = datetime('now')
+         WHERE id = ? AND status = 'pending'`,
+      ).run(status, webhookJson, id);
+      const payment = getPayment(id);
+      if (!payment) return null;
+      if (info.changes === 0) {
+        // Already final: acknowledge an identical replay, refuse a contradiction.
+        return payment.status === status ? { payment, transitioned: false } : null;
+      }
+      // Activation lives inside the same transaction — a crash can never leave
+      // a settled-but-unactivated payment behind.
+      if (status === "succeeded" && payment.invite_slug) {
+        setInvitePremium(payment.invite_slug, payment.tier);
+      }
+      return { payment, transitioned: true };
+    },
+  );
+  return settle();
+}
+
+/** Attach diagnostic context to a still-pending payment (e.g. an amount
+ *  mismatch), without touching its status. */
+export function recordPaymentNote(id: string, note: string): void {
+  prep(
+    `UPDATE payments SET webhook_json = ?, updated_at = datetime('now')
+     WHERE id = ? AND status = 'pending'`,
+  ).run(note, id);
+}
+
+/** Activate a paid tier on an invite (branding removal etc). */
+export function setInvitePremium(slug: string, tier: string): boolean {
+  const info = prep("UPDATE invites SET premium_tier = ? WHERE slug = ?").run(tier, slug);
+  return info.changes > 0;
 }
 
 // ---------- first-party analytics ----------
