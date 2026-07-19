@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { finalizePayment, getPayment, logEvent, setInvitePremium } from "@/lib/db";
+import { finalizePayment, getPayment, logEvent, recordPaymentNote } from "@/lib/db";
 import { verifyWebhookSignature } from "@/lib/finik";
 
 export const runtime = "nodejs";
@@ -50,39 +50,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  // Exact matches only — "UNSUCCESSFUL" must never read as success.
   const normalized = statusRaw.toUpperCase();
-  const status = normalized.includes("SUCCE")
+  const SUCCESS = new Set(["SUCCESS", "SUCCEEDED"]);
+  const FAILURE = new Set(["FAIL", "FAILED", "CANCELED", "CANCELLED", "EXPIRED"]);
+  const status = SUCCESS.has(normalized)
     ? ("succeeded" as const)
-    : normalized.includes("FAIL") || normalized.includes("CANCEL") || normalized.includes("EXPIRE")
+    : FAILURE.has(normalized)
       ? ("failed" as const)
       : null;
   if (!status) return NextResponse.json({ ok: true });
 
-  // A "successful" payment for the wrong amount is not a success for us:
-  // leave the record pending (visible for manual review) rather than settle.
+  // A "success" must carry a real amount covering what we charged — anything
+  // else leaves the record pending (visible for manual review), not settled.
   const existing = getPayment(idRaw);
   if (!existing) return NextResponse.json({ ok: true });
   const amount = [fields?.amount, body.amount].find((v) => typeof v === "number") as
     | number
     | undefined;
-  if (status === "succeeded" && amount !== undefined && amount < existing.amount_som) {
-    console.error(
-      `finik webhook: amount mismatch for ${existing.id}: got ${amount}, expected ${existing.amount_som}`,
-    );
-    logEvent("payment_amount_mismatch", existing.invite_slug, existing.tier);
+  if (
+    status === "succeeded" &&
+    !(typeof amount === "number" && Number.isFinite(amount) && amount >= existing.amount_som)
+  ) {
+    if (existing.status === "pending" && !existing.webhook_json?.includes("amount_mismatch")) {
+      // Log once per payment, not once per webhook retry: remember the
+      // mismatch on the record itself (status stays pending for review).
+      recordPaymentNote(existing.id, JSON.stringify({ amount_mismatch: amount ?? null, raw: raw.slice(0, 1000) }));
+      console.error(
+        `finik webhook: amount mismatch for ${existing.id}: got ${amount}, expected ${existing.amount_som}`,
+      );
+      logEvent("payment_amount_mismatch", existing.invite_slug, existing.tier);
+    }
     return NextResponse.json({ ok: true });
   }
 
+  // finalizePayment settles AND activates the invite in one transaction.
   const result = finalizePayment(idRaw, status, raw.slice(0, 4000));
   if (!result) return NextResponse.json({ ok: true });
   const { payment, transitioned } = result;
-  // Side effects only on the call that actually settled the payment —
+  // Analytics only on the call that actually settled the payment —
   // Finik retries webhooks, and retries must not double-count anything.
   if (!transitioned) return NextResponse.json({ ok: true });
 
-  if (status === "succeeded" && payment.invite_slug) {
-    setInvitePremium(payment.invite_slug, payment.tier);
-  }
   logEvent(
     status === "succeeded" ? "payment_succeeded" : "payment_failed",
     payment.invite_slug,

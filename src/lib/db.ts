@@ -629,17 +629,37 @@ export function finalizePayment(
   status: "succeeded" | "failed",
   webhookJson: string | null,
 ): { payment: PaymentRecord; transitioned: boolean } | null {
-  const info = prep(
-    `UPDATE payments SET status = ?, webhook_json = ?, updated_at = datetime('now')
+  const conn = db();
+  const settle = conn.transaction(
+    (): { payment: PaymentRecord; transitioned: boolean } | null => {
+      const info = prep(
+        `UPDATE payments SET status = ?, webhook_json = ?, updated_at = datetime('now')
+         WHERE id = ? AND status = 'pending'`,
+      ).run(status, webhookJson, id);
+      const payment = getPayment(id);
+      if (!payment) return null;
+      if (info.changes === 0) {
+        // Already final: acknowledge an identical replay, refuse a contradiction.
+        return payment.status === status ? { payment, transitioned: false } : null;
+      }
+      // Activation lives inside the same transaction — a crash can never leave
+      // a settled-but-unactivated payment behind.
+      if (status === "succeeded" && payment.invite_slug) {
+        setInvitePremium(payment.invite_slug, payment.tier);
+      }
+      return { payment, transitioned: true };
+    },
+  );
+  return settle();
+}
+
+/** Attach diagnostic context to a still-pending payment (e.g. an amount
+ *  mismatch), without touching its status. */
+export function recordPaymentNote(id: string, note: string): void {
+  prep(
+    `UPDATE payments SET webhook_json = ?, updated_at = datetime('now')
      WHERE id = ? AND status = 'pending'`,
-  ).run(status, webhookJson, id);
-  const payment = getPayment(id);
-  if (!payment) return null;
-  if (info.changes === 0) {
-    // Already final: acknowledge an identical replay, refuse a contradiction.
-    return payment.status === status ? { payment, transitioned: false } : null;
-  }
-  return { payment, transitioned: true };
+  ).run(note, id);
 }
 
 /** Activate a paid tier on an invite (branding removal etc). */

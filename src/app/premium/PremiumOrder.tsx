@@ -154,9 +154,10 @@ function OrderForm({
     setSubmitting(true);
     setError(null);
     try {
-      // Real checkout when Finik is wired up; the payment route records the
-      // lead too, so nothing is lost if the payer abandons the checkout.
-      if (paymentsEnabled) {
+      // Real checkout when Finik is wired up AND this tier's promises are
+      // deliverable today; the payment route records the lead too, so nothing
+      // is lost if the payer abandons the checkout.
+      if (paymentsEnabled && cfg.payable) {
         const res = await fetch("/api/pay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -265,7 +266,7 @@ function OrderForm({
         <button type="submit" className="btn" disabled={submitting}>
           {submitting
             ? tr("premium.form_submitting")
-            : paymentsEnabled
+            : paymentsEnabled && cfg.payable
               ? tr("premium.pay_submit")
               : tr("premium.form_submit")}
         </button>

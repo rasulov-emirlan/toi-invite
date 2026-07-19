@@ -50,6 +50,11 @@ export async function POST(req: Request) {
   }
   const clean = result.value;
   const tier = getTier(clean.tier);
+  // Real money only for tiers whose promises the product delivers today —
+  // the rest stay lead-capture (client falls back on 503).
+  if (!tier.payable) {
+    return NextResponse.json({ error: "payments_unavailable" }, { status: 503 });
+  }
 
   // Optional target invite — only accepted when it actually exists.
   const slug =
