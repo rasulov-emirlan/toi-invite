@@ -27,7 +27,7 @@ export default function GuestBoard({
   const [rows, setRows] = useState<GuestBoardRow[]>(initial);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   // Clipboard silently no-ops in some WhatsApp/TG WebViews — fall back to a
   // selectable input under that guest's card instead of failing quietly.
@@ -36,24 +36,35 @@ export default function GuestBoard({
   useEffect(() => setOrigin(window.location.origin), []);
 
   /** One name per line — organizers paste whole family lists from Notes.
-   *  Sent as a single bulk request: one rate-limit token, one transaction. */
-  async function addNames(raw: string): Promise<boolean> {
+   *  Sent as a single bulk request: one rate-limit token, one transaction.
+   *  Names the server dropped for capacity stay in the box, never lost. */
+  async function addNames(raw: string): Promise<void> {
     const names = raw
       .split("\n")
       .map((n) => n.trim())
       .filter(Boolean)
       .slice(0, 100);
-    if (names.length === 0) return false;
-    return op({ op: "add", names });
+    if (names.length === 0) return;
+    const data = await op({ op: "add", names });
+    if (!data) return;
+    const added = data.added ?? names.length;
+    if (added < names.length) {
+      setName(names.slice(added).join("\n"));
+      setError(tr("rsvps.board_full").replace("{n}", String(names.length - added)));
+    } else {
+      setName("");
+    }
   }
 
   function personalUrl(g: GuestBoardRow): string {
     return `${origin}/i/${slug}?to=${encodeURIComponent(g.name)}&g=${g.token}`;
   }
 
-  async function op(body: Record<string, unknown>): Promise<boolean> {
+  async function op(
+    body: Record<string, unknown>,
+  ): Promise<{ guests: GuestBoardRow[]; added?: number } | null> {
     setBusy(true);
-    setError(false);
+    setError(null);
     try {
       const res = await fetch(`/api/guests/${slug}`, {
         method: "POST",
@@ -61,12 +72,12 @@ export default function GuestBoard({
         body: JSON.stringify({ token, ...body }),
       });
       if (!res.ok) throw new Error(String(res.status));
-      const data = (await res.json()) as { guests: GuestBoardRow[] };
+      const data = (await res.json()) as { guests: GuestBoardRow[]; added?: number };
       setRows(data.guests);
-      return true;
+      return data;
     } catch {
-      setError(true);
-      return false;
+      setError(tr("rsvps.board_error"));
+      return null;
     } finally {
       setBusy(false);
     }
@@ -90,7 +101,7 @@ export default function GuestBoard({
         onSubmit={async (e) => {
           e.preventDefault();
           if (!name.trim() || busy) return;
-          if (await addNames(name)) setName("");
+          await addNames(name);
         }}
       >
         <textarea
@@ -111,7 +122,7 @@ export default function GuestBoard({
 
       {error && (
         <div className="alert" role="alert">
-          {tr("rsvps.board_error")}
+          {error}
         </div>
       )}
 

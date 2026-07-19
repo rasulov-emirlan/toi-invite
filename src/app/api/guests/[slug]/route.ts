@@ -67,14 +67,20 @@ export async function POST(
       : typeof body.name === "string"
         ? [body.name]
         : [];
+    if (raw.length < 1 || raw.length > MAX_BULK_NAMES) {
+      return NextResponse.json({ error: "validation", fields: ["names"] }, { status: 400 });
+    }
     const names = raw
       .filter((n): n is string => typeof n === "string")
       .map((n) => n.trim())
-      .filter((n) => n.length >= 1 && n.length <= LIMITS.guestName)
-      .slice(0, MAX_BULK_NAMES);
-    if (names.length < 1) {
+      .filter(Boolean);
+    // All-or-nothing on validity: silently dropping a too-long name from the
+    // middle of a pasted list would desync the client's "what failed" math.
+    if (names.length !== raw.length || names.some((n) => n.length > LIMITS.guestName)) {
       return NextResponse.json({ error: "validation", fields: ["name"] }, { status: 400 });
     }
+    // Inserted in order — `added` tells the client exactly which tail was
+    // dropped for capacity, so nothing is lost silently.
     const added = addInvitedGuests(slug, names);
     if (added === 0) return NextResponse.json({ error: "list full" }, { status: 409 });
     return NextResponse.json(

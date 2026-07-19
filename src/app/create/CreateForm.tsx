@@ -222,13 +222,16 @@ export default function CreateForm({
       setDressCode(d.dressCode ?? "");
       setDeadline(d.deadline ?? "");
       setProgram(Array.isArray(d.program) ? d.program : []);
-      setPhotoId(d.photoId ?? null);
       if (d.photoId) {
-        // Orphan uploads are GC'd after ~24h — a stale draft must not point
-        // at a photo that no longer exists.
-        void fetch(`/api/photo/${d.photoId}`, { method: "HEAD" }).then((r) => {
-          if (!r.ok) setPhotoId(null);
-        }).catch(() => {});
+        // Orphan uploads are GC'd after ~24h, so a stale draft may point at a
+        // deleted photo: restore it only once the server confirms it exists,
+        // and never over a photo the user picked in the meantime.
+        const draftPhoto = d.photoId;
+        void fetch(`/api/photo/${draftPhoto}`, { method: "HEAD" })
+          .then((r) => {
+            if (r.ok) setPhotoId((cur) => cur ?? draftPhoto);
+          })
+          .catch(() => {});
       }
       if (
         d.hostPhone ||
