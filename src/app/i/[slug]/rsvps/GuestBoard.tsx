@@ -36,18 +36,23 @@ export default function GuestBoard({
   useEffect(() => setOrigin(window.location.origin), []);
 
   /** One name per line — organizers paste whole family lists from Notes.
-   *  Sent as a single bulk request: one rate-limit token, one transaction.
-   *  Names the server dropped for capacity stay in the box, never lost. */
+   *  Sent as one bulk request (one rate-limit token, one transaction), capped
+   *  at the API's 100-per-request limit. Whatever wasn't added — over-cap
+   *  overflow, capacity-dropped tail, or a full list — stays in the box. */
   async function addNames(raw: string): Promise<void> {
     const names = raw
       .split("\n")
       .map((n) => n.trim())
-      .filter(Boolean)
-      .slice(0, 100);
+      .filter(Boolean);
     if (names.length === 0) return;
-    const data = await op({ op: "add", names });
-    if (!data) return;
-    const added = data.added ?? names.length;
+    const batch = names.slice(0, 100);
+    const r = await op({ op: "add", names: batch });
+    if (r.status === 409) {
+      setError(tr("rsvps.board_full").replace("{n}", String(names.length)));
+      return;
+    }
+    if (r.status !== 201) return; // error already surfaced; input untouched
+    const added = r.added ?? batch.length;
     if (added < names.length) {
       setName(names.slice(added).join("\n"));
       setError(tr("rsvps.board_full").replace("{n}", String(names.length - added)));
@@ -62,7 +67,7 @@ export default function GuestBoard({
 
   async function op(
     body: Record<string, unknown>,
-  ): Promise<{ guests: GuestBoardRow[]; added?: number } | null> {
+  ): Promise<{ status: number; guests?: GuestBoardRow[]; added?: number }> {
     setBusy(true);
     setError(null);
     try {
@@ -71,13 +76,19 @@ export default function GuestBoard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, ...body }),
       });
-      if (!res.ok) throw new Error(String(res.status));
-      const data = (await res.json()) as { guests: GuestBoardRow[]; added?: number };
-      setRows(data.guests);
-      return data;
+      let data: { guests?: GuestBoardRow[]; added?: number } = {};
+      try {
+        data = (await res.json()) as typeof data;
+      } catch {
+        /* non-JSON error body */
+      }
+      if (res.ok && data.guests) setRows(data.guests);
+      // 409 gets its specific message from the caller.
+      if (!res.ok && res.status !== 409) setError(tr("rsvps.board_error"));
+      return { status: res.status, ...data };
     } catch {
       setError(tr("rsvps.board_error"));
-      return null;
+      return { status: 0 };
     } finally {
       setBusy(false);
     }
