@@ -87,6 +87,10 @@ function db(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_invited_guests_slug ON invited_guests(invite_slug);
     CREATE TABLE IF NOT EXISTS payments (
       id           TEXT PRIMARY KEY,
+      -- What the payer's browser sees (thanks page, status poll). Kept
+      -- separate from id: the id is what Finik's webhook authenticates by,
+      -- so the payer must never learn it.
+      view_token   TEXT NOT NULL,
       tier         TEXT NOT NULL,
       amount_som   INTEGER NOT NULL,
       name         TEXT NOT NULL,
@@ -98,6 +102,7 @@ function db(): Database.Database {
       updated_at   TEXT,
       webhook_json TEXT
     );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_view ON payments(view_token);
     CREATE TABLE IF NOT EXISTS events (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       name       TEXT NOT NULL,
@@ -570,6 +575,7 @@ export type PaymentStatus = "pending" | "succeeded" | "failed";
 
 export interface PaymentRecord {
   id: string;
+  view_token: string;
   tier: string;
   amount_som: number;
   name: string;
@@ -584,6 +590,7 @@ export interface PaymentRecord {
 
 export function createPayment(rec: {
   id: string;
+  view_token: string;
   tier: string;
   amount_som: number;
   name: string;
@@ -592,8 +599,8 @@ export function createPayment(rec: {
   invite_slug: string | null;
 }): void {
   prep(
-    `INSERT INTO payments (id, tier, amount_som, name, phone, locale, invite_slug)
-     VALUES (@id, @tier, @amount_som, @name, @phone, @locale, @invite_slug)`,
+    `INSERT INTO payments (id, view_token, tier, amount_som, name, phone, locale, invite_slug)
+     VALUES (@id, @view_token, @tier, @amount_som, @name, @phone, @locale, @invite_slug)`,
   ).run(rec);
 }
 
@@ -604,25 +611,35 @@ export function getPayment(id: string): PaymentRecord | null {
   return row ?? null;
 }
 
+/** Payer-facing lookup — never exposes more than the record itself. */
+export function getPaymentByViewToken(token: string): PaymentRecord | null {
+  const row = prep("SELECT * FROM payments WHERE view_token = ?").get(token) as
+    | PaymentRecord
+    | undefined;
+  return row ?? null;
+}
+
 /**
  * Transition pending → final exactly once (a replayed webhook can't flip a
- * settled payment). Returns the settled record, or null when the id is
- * unknown / already final with a different status.
+ * settled payment). `transitioned` is true only for the call that actually
+ * performed the move — retried webhooks must not re-run side effects.
  */
 export function finalizePayment(
   id: string,
   status: "succeeded" | "failed",
   webhookJson: string | null,
-): PaymentRecord | null {
+): { payment: PaymentRecord; transitioned: boolean } | null {
   const info = prep(
     `UPDATE payments SET status = ?, webhook_json = ?, updated_at = datetime('now')
      WHERE id = ? AND status = 'pending'`,
   ).run(status, webhookJson, id);
+  const payment = getPayment(id);
+  if (!payment) return null;
   if (info.changes === 0) {
-    const existing = getPayment(id);
-    return existing && existing.status === status ? existing : null;
+    // Already final: acknowledge an identical replay, refuse a contradiction.
+    return payment.status === status ? { payment, transitioned: false } : null;
   }
-  return getPayment(id);
+  return { payment, transitioned: true };
 }
 
 /** Activate a paid tier on an invite (branding removal etc). */

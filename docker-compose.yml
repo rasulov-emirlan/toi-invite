@@ -12,6 +12,9 @@ services:
       - FINIK_API_KEY=${FINIK_API_KEY:-}
       - FINIK_ACCOUNT_ID=${FINIK_ACCOUNT_ID:-}
       - FINIK_PRIVATE_KEY_FILE=${FINIK_PRIVATE_KEY_FILE:-}
+      # Finik's webhook-verification public key (from their support) — once
+      # present, unsigned/forged webhooks are rejected outright.
+      - FINIK_WEBHOOK_PUBLIC_KEY_FILE=${FINIK_WEBHOOK_PUBLIC_KEY_FILE:-}
     volumes:
       - toi-data:/data
       # RSA key whose public half is registered with Finik; never in the image.

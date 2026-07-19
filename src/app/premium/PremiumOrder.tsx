@@ -121,7 +121,7 @@ export default function PremiumOrder({
         ))}
       </div>
 
-      <p className="premium-note">{tr("premium.pay_note")}</p>
+      <p className="premium-note">{tr(paymentsEnabled ? "premium.pay_note_live" : "premium.pay_note")}</p>
     </>
   );
 }

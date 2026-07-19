@@ -34,7 +34,7 @@ export default async function PremiumPage({
             Той<b>·</b>Invite
           </Link>
           <Link
-            href={`/premium?lang=${other}`}
+            href={`/premium?lang=${other}${targetSlug ? `&slug=${targetSlug}` : ""}`}
             className="kicker"
             style={{ textDecoration: "none" }}
           >

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getPayment } from "@/lib/db";
+import { getPaymentByViewToken } from "@/lib/db";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 import PaymentStatus from "./PaymentStatus";
@@ -24,7 +24,7 @@ export default async function ThanksPage({
   const locale: Locale = isLocale(sp.lang) ? sp.lang : DEFAULT_LOCALE;
   const tr = translator(locale);
   const pid = UUID_RE.test(sp.pid ?? "") ? (sp.pid as string) : null;
-  const payment = pid ? getPayment(pid) : null;
+  const payment = pid ? getPaymentByViewToken(pid) : null;
 
   return (
     <>
@@ -47,7 +47,7 @@ export default async function ThanksPage({
             </p>
           </div>
         ) : (
-          <PaymentStatus pid={pid} initialStatus={payment.status} locale={locale} />
+          <PaymentStatus pid={pid} initialStatus={payment.status} locale={locale} slug={payment.invite_slug ?? undefined} />
         )}
       </main>
     </>

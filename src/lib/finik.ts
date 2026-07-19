@@ -1,5 +1,5 @@
 import "server-only";
-import { createSign } from "node:crypto";
+import { createSign, createVerify } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 /**
@@ -79,6 +79,39 @@ export function signCanonical(data: string, privateKeyPem: string): string {
   const signer = createSign("SHA256");
   signer.update(data);
   return signer.sign(privateKeyPem, "base64");
+}
+
+/**
+ * Verify an inbound webhook's `signature` header against Finik's public key
+ * (requested from Finik support; env-gated until provided). Finik signs the
+ * same canonical form it expects from us: method, our webhook path, host +
+ * x-api-* headers, and the body with top-level keys sorted.
+ */
+export function verifyWebhookSignature(
+  headers: Headers,
+  path: string,
+  parsedBody: Record<string, unknown>,
+): boolean | "unconfigured" {
+  const keyFile = process.env.FINIK_WEBHOOK_PUBLIC_KEY_FILE;
+  if (!keyFile) return "unconfigured";
+  const signature = headers.get("signature");
+  const host = headers.get("host");
+  if (!signature || !host) return false;
+  try {
+    const publicKey = readFileSync(keyFile, "utf8");
+    const xApi = [...headers.entries()]
+      .filter(([k]) => k.toLowerCase().startsWith("x-api-"))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k.toLowerCase()}:${v}`);
+    const headersData = [`host:${host}`, ...xApi].join("&");
+    const data = ["post", path, headersData, canonicalJsonBody(parsedBody)].join("\n");
+    const verifier = createVerify("SHA256");
+    verifier.update(data);
+    return verifier.verify(publicKey, signature, "base64");
+  } catch (err) {
+    console.error("finik webhook verify failed", err);
+    return false;
+  }
 }
 
 export interface CreatePaymentArgs {

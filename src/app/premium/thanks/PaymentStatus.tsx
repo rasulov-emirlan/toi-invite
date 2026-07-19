@@ -13,10 +13,13 @@ export default function PaymentStatus({
   pid,
   initialStatus,
   locale,
+  slug,
 }: {
   pid: string;
   initialStatus: Status;
   locale: Locale;
+  /** Target invite — a retry must keep activating the same invite. */
+  slug?: string;
 }) {
   const tr = useMemo(() => translator(locale), [locale]);
   const [status, setStatus] = useState<Status>(initialStatus);
@@ -74,7 +77,10 @@ export default function PaymentStatus({
       <p style={{ margin: 0, color: "var(--gray-800)" }}>{body}</p>
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         {status === "failed" && (
-          <Link className="btn" href={`/premium?lang=${locale}`}>
+          <Link
+            className="btn"
+            href={`/premium?lang=${locale}${slug ? `&slug=${slug}` : ""}`}
+          >
             {tr("premium.pay_retry")}
           </Link>
         )}

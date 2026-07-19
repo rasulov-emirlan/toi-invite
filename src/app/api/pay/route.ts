@@ -57,9 +57,14 @@ export async function POST(req: Request) {
 
   addPremiumInterest(clean);
 
+  // Two ids on purpose: `paymentId` authenticates Finik's webhook, so the
+  // payer must never see it; `viewToken` is what their browser gets for the
+  // thanks page and status polling.
   const paymentId = randomUUID();
+  const viewToken = randomUUID();
   createPayment({
     id: paymentId,
+    view_token: viewToken,
     tier: clean.tier,
     amount_som: tier.priceSom,
     name: clean.name,
@@ -73,11 +78,11 @@ export async function POST(req: Request) {
       paymentId,
       amountSom: tier.priceSom,
       description: `Toi-Invite ${clean.tier}`,
-      redirectUrl: `${BASE_URL}/premium/thanks?pid=${paymentId}&lang=${clean.locale}`,
+      redirectUrl: `${BASE_URL}/premium/thanks?pid=${viewToken}&lang=${clean.locale}`,
       webhookUrl: `${BASE_URL}/api/finik/webhook`,
     });
     logEvent("payment_started", slug, clean.tier);
-    return NextResponse.json({ url, pid: paymentId }, { status: 201 });
+    return NextResponse.json({ url }, { status: 201 });
   } catch (err) {
     console.error("finik create payment failed", err);
     return NextResponse.json({ error: "provider" }, { status: 502 });

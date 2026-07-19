@@ -453,7 +453,7 @@ export default function CreateForm({
           ? JSON.stringify(program.filter((p) => p.title.trim()))
           : null,
       photo_id: photoId,
-      premium_tier: null,
+      premium_tier: edit?.initial.premium_tier ?? null,
     };
   }
 
