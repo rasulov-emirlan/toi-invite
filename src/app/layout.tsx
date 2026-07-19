@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 // Self-hosted fonts (latin + cyrillic subsets served from our origin) — no
 // Google Fonts runtime dependency, which flashes or fails inside the WhatsApp
 // and Telegram in-app WebViews most guests open invites in.
-import "@fontsource/space-grotesk/500.css";
-import "@fontsource/space-grotesk/700.css";
+// (No display webfont: the site is Cyrillic-first and Space Grotesk has no
+// Cyrillic glyphs — headings would silently fall back to system-ui anyway,
+// while every visitor still paid for the woff2. Inter covers both scripts.)
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "./globals.css";

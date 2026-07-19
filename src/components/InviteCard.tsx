@@ -73,6 +73,8 @@ export default function InviteCard({
             className="invite__photo"
             src={`/api/photo/${invite.photo_id}`}
             alt={displayNames(invite, locale)}
+            width={148}
+            height={148}
           />
         )}
         <h1 className="invite__names">
