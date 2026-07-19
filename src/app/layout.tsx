@@ -10,8 +10,7 @@ import "@fontsource/inter/600.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "./globals.css";
-
-const BASE_URL = process.env.APP_BASE_URL ?? "http://localhost:3000";
+import { BASE_URL } from "@/lib/base-url";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

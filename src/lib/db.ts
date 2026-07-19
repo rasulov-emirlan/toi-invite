@@ -486,14 +486,16 @@ export function resolveInvitedGuest(slug: string, token: string): number | null 
   return row?.id ?? null;
 }
 
-/** First open of a personal link stamps opened_at; later opens keep the first. */
-export function markInvitedGuestOpened(slug: string, token: string): void {
-  db()
+/** First open of a personal link stamps opened_at; later opens keep the first.
+ *  Returns true only for the stamping open, so callers can count it once. */
+export function markInvitedGuestOpened(slug: string, token: string): boolean {
+  const info = db()
     .prepare(
       `UPDATE invited_guests SET opened_at = datetime('now')
        WHERE invite_slug = ? AND token = ? AND opened_at IS NULL`,
     )
     .run(slug, token);
+  return info.changes > 0;
 }
 
 export interface GuestBoardRow {

@@ -6,6 +6,7 @@ import {
   listGuestBoard,
 } from "@/lib/db";
 import { isValidSlug } from "@/lib/slug";
+import { LIMITS } from "@/lib/validation";
 import { tokensMatch } from "@/lib/token";
 import { clientKey, inviteEditLimiter } from "@/lib/ratelimit";
 
@@ -19,7 +20,6 @@ interface Body {
   id?: number;
 }
 
-const MAX_GUEST_NAME = 80;
 
 /** Organizer guest-list management: add / remove invited guests. */
 export async function POST(
@@ -56,7 +56,7 @@ export async function POST(
 
   if (body.op === "add") {
     const name = typeof body.name === "string" ? body.name.trim() : "";
-    if (name.length < 1 || name.length > MAX_GUEST_NAME) {
+    if (name.length < 1 || name.length > LIMITS.guestName) {
       return NextResponse.json({ error: "validation", fields: ["name"] }, { status: 400 });
     }
     const id = addInvitedGuest(slug, name);

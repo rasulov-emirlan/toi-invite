@@ -3,6 +3,7 @@ import { isValidSlug } from "@/lib/slug";
 import { isLocale } from "@/lib/i18n";
 import { icsContent } from "@/lib/calendar";
 import { toCalendarEvent } from "@/lib/invite-view";
+import { clientKey, trackLimiter } from "@/lib/ratelimit";
 import type { Locale } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -22,7 +23,11 @@ export async function GET(
   const langParam = url.searchParams.get("lang");
   const locale: Locale = isLocale(langParam) ? langParam : invite.locale;
 
-  logEvent("ics_download", slug);
+  // The download itself stays available past the limit — only the analytics
+  // write is capped, so a curl loop can't grow the events table.
+  if (trackLimiter.check(clientKey(req, "ics"), Date.now()).allowed) {
+    logEvent("ics_download", slug);
+  }
   const ics = icsContent(toCalendarEvent(invite, locale), `${slug}@toi-invite`);
   return new Response(ics, {
     status: 200,

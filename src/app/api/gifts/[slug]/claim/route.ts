@@ -4,6 +4,7 @@ import { toGuestGifts } from "@/lib/gifts";
 import { sanitizeGuestName } from "@/lib/personalize";
 import { isValidSlug } from "@/lib/slug";
 import { clientIp, giftClaimLimiter } from "@/lib/ratelimit";
+import { OPAQUE_REF_RE } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,8 +15,6 @@ interface Body {
   guest_ref?: string;
   guest_name?: string;
 }
-
-const GUEST_REF_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 /** Guest reserves or releases a wishlist item. Identified by the same opaque
  *  per-browser ref as RSVPs — a valid ref is required (it IS the release key). */
@@ -49,7 +48,7 @@ export async function POST(
 
   const id = Number(body.id);
   const ref = typeof body.guest_ref === "string" ? body.guest_ref : "";
-  if (!Number.isInteger(id) || id < 1 || !GUEST_REF_RE.test(ref)) {
+  if (!Number.isInteger(id) || id < 1 || !OPAQUE_REF_RE.test(ref)) {
     return NextResponse.json({ error: "validation", fields: ["id", "guest_ref"] }, { status: 400 });
   }
   if (!getInvite(slug)) {

@@ -28,8 +28,8 @@ export async function POST(req: Request) {
         // Personal-link "opened" stamp — capability-token gated, idempotent.
         const g = typeof body?.g === "string" && GUEST_LINK_TOKEN_RE.test(body.g) ? body.g : null;
         if (g && resolveInvitedGuest(slug, g) != null) {
-          markInvitedGuestOpened(slug, g);
-          logEvent("guest_opened", slug);
+          // Only the stamping open counts — re-opens must not inflate the funnel.
+          if (markInvitedGuestOpened(slug, g)) logEvent("guest_opened", slug);
         }
       }
     } catch {

@@ -276,7 +276,7 @@ export interface CleanRsvp {
  * row. Lenient: a malformed value degrades to "no id" (plain insert) rather
  * than rejecting the RSVP.
  */
-const GUEST_REF_RE = /^[A-Za-z0-9_-]{8,64}$/;
+export const OPAQUE_REF_RE = /^[A-Za-z0-9_-]{8,64}$/;
 
 /** Personal-link capability tokens minted by addInvitedGuest (slug alphabet). */
 export const GUEST_LINK_TOKEN_RE = /^[a-z0-9]{6,32}$/;
@@ -306,7 +306,7 @@ export function validateRsvp(input: RsvpInput): ValidationResult<CleanRsvp> {
   const wish = wishRaw.length > 0 ? wishRaw : null;
 
   const refRaw = str(input.guest_ref);
-  const guest_ref = GUEST_REF_RE.test(refRaw) ? refRaw : null;
+  const guest_ref = OPAQUE_REF_RE.test(refRaw) ? refRaw : null;
 
   // Same lenient stance as guest_ref: this only links the RSVP to the
   // organizer's guest list; junk degrades to "not linked".

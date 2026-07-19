@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
-import { logEvent } from "@/lib/db";
+import { logPageView } from "@/lib/pageview";
 import type { Locale } from "@/lib/types";
 import CreateForm from "./CreateForm";
 
@@ -18,7 +18,7 @@ export default async function CreatePage({
   const tr = translator(locale);
   // Viral-loop attribution: ?ref=<invite slug> arrives from an invite footer.
   const ref = REF_RE.test(sp.ref ?? "") ? sp.ref : undefined;
-  logEvent("create_opened", null, ref ?? null);
+  await logPageView("create_opened", null, ref ?? null);
 
   return (
     <>

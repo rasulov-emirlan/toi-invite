@@ -23,7 +23,6 @@ export interface TemplateConfig {
     surface: string;
   };
   /** Static per-template OG image, served from /og/<key>.png. */
-  ogImage: string;
   /** Decorative hero background, served from /templates/<key>.png. */
   heroImage: string;
 }
@@ -42,7 +41,6 @@ export const TEMPLATES: TemplateConfig[] = [
       muted: "#7a6a4f",
       surface: "#fffdf7",
     },
-    ogImage: "/og/gold.jpg",
     heroImage: "/templates/gold.jpg",
   },
   {
@@ -57,7 +55,6 @@ export const TEMPLATES: TemplateConfig[] = [
       muted: "#4f6b5d",
       surface: "#fbfefc",
     },
-    ogImage: "/og/emerald.jpg",
     heroImage: "/templates/emerald.jpg",
   },
   {
@@ -72,7 +69,6 @@ export const TEMPLATES: TemplateConfig[] = [
       muted: "#8a5c68",
       surface: "#fffafb",
     },
-    ogImage: "/og/rose.jpg",
     heroImage: "/templates/rose.jpg",
   },
   // Kyrgyz-ornament (oimo/shyrdak) plates — kochkor-muyuz spirals, same three
@@ -89,7 +85,6 @@ export const TEMPLATES: TemplateConfig[] = [
       muted: "#7a6a4f",
       surface: "#fffdf7",
     },
-    ogImage: "/templates/ornament_gold.jpg",
     heroImage: "/templates/ornament_gold.jpg",
   },
   {
@@ -104,7 +99,6 @@ export const TEMPLATES: TemplateConfig[] = [
       muted: "#4f6b5d",
       surface: "#fbfefc",
     },
-    ogImage: "/templates/ornament_emerald.jpg",
     heroImage: "/templates/ornament_emerald.jpg",
   },
   {
@@ -119,7 +113,6 @@ export const TEMPLATES: TemplateConfig[] = [
       muted: "#8a5c68",
       surface: "#fffafb",
     },
-    ogImage: "/templates/ornament_rose.jpg",
     heroImage: "/templates/ornament_rose.jpg",
   },
 ];

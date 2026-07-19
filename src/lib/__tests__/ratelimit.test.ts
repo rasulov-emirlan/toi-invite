@@ -43,19 +43,8 @@ describe("TokenBucketLimiter", () => {
     expect(rl.check("a", t).allowed).toBe(false);
   });
 
-  it("prunes idle buckets", () => {
-    const rl = new TokenBucketLimiter(1, 1, 1000); // 1s idle TTL
-    const t = 1_000_000;
-    rl.check("a", t);
-    rl.check("b", t);
-    expect(rl.size()).toBe(2);
-    rl.prune(t + 2000); // both idle > 1s
-    expect(rl.size()).toBe(0);
-  });
-
   it("hard-caps the map under a distinct-key flood (bounded memory)", () => {
-    // idleTtl huge so idle-prune can't help; only the hard cap bounds it
-    const rl = new TokenBucketLimiter(1, 1, 60 * 60_000, 5); // maxKeys = 5
+    const rl = new TokenBucketLimiter(1, 1, 5); // maxKeys = 5
     const t = 1_000_000;
     for (let i = 0; i < 1000; i++) rl.check(`ip-${i}`, t); // all "fresh", none idle
     expect(rl.size()).toBeLessThanOrEqual(5);
