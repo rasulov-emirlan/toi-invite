@@ -30,6 +30,7 @@ const base: InviteRecord = {
   photo_id: null,
   organizer_ref: null,
   created_ref: null,
+  premium_tier: null,
   created_at: "2026-07-07 00:00:00",
 };
 

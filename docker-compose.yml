@@ -7,8 +7,15 @@ services:
       - APP_BASE_URL=https://toi.night.enkiduck.com
       - DB_PATH=/data/toi.db
       - ADMIN_TOKEN=${ADMIN_TOKEN}
+      # Finik acquiring (real payments). All optional — absent means the
+      # premium page stays a pure interest fake-door.
+      - FINIK_API_KEY=${FINIK_API_KEY:-}
+      - FINIK_ACCOUNT_ID=${FINIK_ACCOUNT_ID:-}
+      - FINIK_PRIVATE_KEY_FILE=${FINIK_PRIVATE_KEY_FILE:-}
     volumes:
       - toi-data:/data
+      # RSA key whose public half is registered with Finik; never in the image.
+      - /home/agent/.config/toi-finik:/keys:ro
     networks: [web]
     labels:
       - traefik.enable=true

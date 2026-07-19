@@ -8,7 +8,17 @@ import type { Locale, PremiumTierKey } from "@/lib/types";
 
 type Selected = Exclude<PremiumTierKey, "free">;
 
-export default function PremiumOrder({ locale }: { locale: Locale }) {
+export default function PremiumOrder({
+  locale,
+  paymentsEnabled = false,
+  slug,
+}: {
+  locale: Locale;
+  /** Finik acquiring wired up server-side — paid tiers go to a real checkout. */
+  paymentsEnabled?: boolean;
+  /** Invite to activate the paid tier on after payment. */
+  slug?: string;
+}) {
   const tr = useMemo(() => translator(locale), [locale]);
   const [selected, setSelected] = useState<Selected | null>(null);
   const [done, setDone] = useState(false);
@@ -49,6 +59,8 @@ export default function PremiumOrder({ locale }: { locale: Locale }) {
       <OrderForm
         locale={locale}
         tier={selected}
+        paymentsEnabled={paymentsEnabled}
+        slug={slug}
         onCancel={() => setSelected(null)}
         onDone={() => setDone(true)}
       />
@@ -117,11 +129,15 @@ export default function PremiumOrder({ locale }: { locale: Locale }) {
 function OrderForm({
   locale,
   tier,
+  paymentsEnabled,
+  slug,
   onCancel,
   onDone,
 }: {
   locale: Locale;
   tier: Selected;
+  paymentsEnabled?: boolean;
+  slug?: string;
   onCancel: () => void;
   onDone: () => void;
 }) {
@@ -138,6 +154,39 @@ function OrderForm({
     setSubmitting(true);
     setError(null);
     try {
+      // Real checkout when Finik is wired up; the payment route records the
+      // lead too, so nothing is lost if the payer abandons the checkout.
+      if (paymentsEnabled) {
+        const res = await fetch("/api/pay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tier, name, phone, locale, comment, slug }),
+        });
+        if (res.status === 429) {
+          const retry = Number(res.headers.get("Retry-After") ?? "30");
+          setError(tr("premium.form_rate_limited").replace("{n}", String(retry)));
+          setSubmitting(false);
+          return;
+        }
+        if (res.ok) {
+          const data = (await res.json()) as { url: string };
+          window.location.assign(data.url);
+          return; // keep the button disabled while the browser navigates
+        }
+        if (res.status === 502) {
+          // Provider hiccup — the lead was already recorded server-side, so
+          // degrade to the "мы свяжемся" flow instead of a dead end.
+          onDone();
+          return;
+        }
+        if (res.status !== 503) {
+          setError(tr("premium.form_error"));
+          setSubmitting(false);
+          return;
+        }
+        // 503 → payments not configured: fall through to the interest form
+        // so the lead is still captured.
+      }
       const res = await fetch("/api/premium-interest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -214,7 +263,11 @@ function OrderForm({
 
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         <button type="submit" className="btn" disabled={submitting}>
-          {submitting ? tr("premium.form_submitting") : tr("premium.form_submit")}
+          {submitting
+            ? tr("premium.form_submitting")
+            : paymentsEnabled
+              ? tr("premium.pay_submit")
+              : tr("premium.form_submit")}
         </button>
         <button
           type="button"

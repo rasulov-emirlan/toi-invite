@@ -101,3 +101,37 @@ describe("db", () => {
     expect(api.markInvitedGuestOpened(slug, token)).toBe(false);
   });
 });
+
+describe("payments", () => {
+  const pid = "11111111-2222-4333-8444-555555555555";
+
+  it("creates, finalizes once, and refuses to flip a settled payment", () => {
+    const slug = api.createInvite(invite).slug;
+    api.createPayment({
+      id: pid, tier: "premium", amount_som: 990,
+      name: "Азамат", phone: "+996555123456", locale: "ru", invite_slug: slug,
+    });
+    expect(api.getPayment(pid)?.status).toBe("pending");
+
+    const settled = api.finalizePayment(pid, "succeeded", "{}");
+    expect(settled?.status).toBe("succeeded");
+    // replayed webhook with the same status is idempotent
+    expect(api.finalizePayment(pid, "succeeded", "{}")?.status).toBe("succeeded");
+    // but a contradictory status cannot flip it
+    expect(api.finalizePayment(pid, "failed", "{}")).toBeNull();
+    expect(api.getPayment(pid)?.status).toBe("succeeded");
+  });
+
+  it("activates the paid tier on the invite", () => {
+    const slug = api.createInvite(invite).slug;
+    expect(api.getInvite(slug)?.premium_tier).toBeNull();
+    expect(api.setInvitePremium(slug, "premium")).toBe(true);
+    expect(api.getInvite(slug)?.premium_tier).toBe("premium");
+    expect(api.setInvitePremium("missing-slug", "premium")).toBe(false);
+  });
+
+  it("returns null for an unknown payment id", () => {
+    expect(api.getPayment("99999999-9999-4999-8999-999999999999")).toBeNull();
+    expect(api.finalizePayment("99999999-9999-4999-8999-999999999999", "failed", null)).toBeNull();
+  });
+});

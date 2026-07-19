@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
 import { TEMPLATES } from "@/lib/templates";
+import { finikConfigured } from "@/lib/finik";
+import { isValidSlug } from "@/lib/slug";
 import type { Locale } from "@/lib/types";
 import PremiumOrder from "./PremiumOrder";
 
@@ -14,10 +16,13 @@ export const metadata: Metadata = {
 export default async function PremiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; slug?: string }>;
 }) {
   const sp = await searchParams;
   const locale: Locale = isLocale(sp.lang) ? sp.lang : DEFAULT_LOCALE;
+  // ?slug= arrives from an organizer surface — the paid tier activates on
+  // that invite once the payment settles.
+  const targetSlug = isValidSlug(sp.slug) ? sp.slug : undefined;
   const tr = translator(locale);
   const other: Locale = locale === "ru" ? "ky" : "ru";
 
@@ -76,7 +81,7 @@ export default async function PremiumPage({
           </p>
         </section>
 
-        <PremiumOrder locale={locale} />
+        <PremiumOrder locale={locale} paymentsEnabled={finikConfigured()} slug={targetSlug} />
       </main>
 
       <footer className="footer">
