@@ -874,6 +874,48 @@ select:focus-visible {
   padding: 1.5rem 0;
 }
 
+.rsvp-why {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--tmuted);
+  margin: 0.35rem 0 0;
+}
+
+.rsvp-closed {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--tmuted);
+  max-width: 36ch;
+  margin: 0.5rem auto 0;
+}
+
+/* guest-count segmented row: six compact cells, wraps on tiny screens */
+.attend--count {
+  flex-wrap: wrap;
+}
+
+.attend--count button {
+  flex: 1 1 3rem;
+  min-width: 3rem;
+}
+
+/* sticky "answer" shortcut — the form is the last block of a long page */
+.rsvp-jump {
+  position: fixed;
+  bottom: 1rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.rsvp-jump .btn-ac {
+  pointer-events: auto;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+}
+
 /* gift wishlist on the invite */
 .gifts {
   margin-top: 2.5rem;

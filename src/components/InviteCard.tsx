@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { whatsappShareUrl } from "@/lib/share";
+import { telegramShareUrl, whatsappShareUrl } from "@/lib/share";
 import { translator } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
-import { eventInstant, googleCalendarUrl } from "@/lib/calendar";
+import { eventInstant, googleCalendarUrl, rsvpClosed } from "@/lib/calendar";
 import {
   displayNames,
   eventLabel,
@@ -14,6 +14,7 @@ import { programFromJson } from "@/lib/validation";
 import type { InviteDisplay, Locale } from "@/lib/types";
 import Countdown from "./Countdown";
 import RsvpForm from "./RsvpForm";
+import RsvpJump from "./RsvpJump";
 import TrackedLink from "./TrackedLink";
 
 /**
@@ -50,15 +51,19 @@ export default function InviteCard({
   const tpl = getTemplate(invite.template);
   const names = displayNames(invite, locale);
   const { start } = eventInstant(invite.event_date, invite.event_time);
-  const shareUrl =
-    mode === "live" && slug && shareBase
-      ? whatsappShareUrl(tr("create.share_text"), `${shareBase}/i/${slug}`)
-      : null;
+  const publicUrl = mode === "live" && slug && shareBase ? `${shareBase}/i/${slug}` : null;
+  const shareUrl = publicUrl ? whatsappShareUrl(tr("create.share_text"), publicUrl) : null;
+  const tgShareUrl = publicUrl ? telegramShareUrl(tr("create.share_text"), publicUrl) : null;
   const createOwnHref = `/create?lang=${locale}${mode === "live" && slug ? `&ref=${slug}` : ""}`;
 
   const greeting = greetingFor(invite, locale);
   const program = programFromJson(invite.program_json);
   const hostDigits = invite.host_phone ? invite.host_phone.replace(/\D+/g, "") : null;
+  // Deadline passed or the toi is over: stop collecting answers (the API
+  // enforces the same rule). Preview/demo always show the open form.
+  const closed =
+    mode === "live" &&
+    rsvpClosed(invite.event_date, invite.event_time, invite.rsvp_deadline, Date.now());
 
   return (
     <article className="invite__card">
@@ -138,6 +143,8 @@ export default function InviteCard({
                 📍 {tr("invite.open_map")}
               </a>
             ))}
+          {/* One calendar action — the raw «.ics» button was developer jargon
+              on a page elders read; the file stays served for power users. */}
           {mode === "preview" ? (
             <span className="btn-ac">📅 {tr("invite.add_to_calendar")}</span>
           ) : (
@@ -148,11 +155,6 @@ export default function InviteCard({
               rel="noopener noreferrer"
             >
               📅 {tr("invite.add_to_calendar")}
-            </a>
-          )}
-          {mode === "live" && slug && (
-            <a className="btn-ac" href={`/api/ics/${slug}?lang=${locale}`}>
-              ⬇ .ics
             </a>
           )}
         </div>
@@ -201,7 +203,7 @@ export default function InviteCard({
 
         {giftsSlot}
 
-        {invite.rsvp_deadline && (
+        {invite.rsvp_deadline && !closed && (
           <p className="rsvp-deadline">
             {tr("invite.rsvp_deadline").replace(
               "{date}",
@@ -212,32 +214,52 @@ export default function InviteCard({
 
         {mode === "preview" ? (
           <RsvpStub locale={locale} />
+        ) : closed ? (
+          <div className="rsvp" id="rsvp">
+            <p className="rsvp-closed">{tr("invite.rsvp_closed")}</p>
+          </div>
         ) : (
-          <RsvpForm
-            slug={slug ?? ""}
-            locale={locale}
-            initialName={guestName}
-            invitedGuest={invitedGuest}
-            demo={mode === "demo"}
-            calendarUrl={googleCalendarUrl(toCalendarEvent(invite, locale))}
-            createOwnHref={createOwnHref}
-          />
+          <>
+            <RsvpForm
+              slug={slug ?? ""}
+              locale={locale}
+              initialName={guestName}
+              invitedGuest={invitedGuest}
+              demo={mode === "demo"}
+              calendarUrl={googleCalendarUrl(toCalendarEvent(invite, locale))}
+              createOwnHref={createOwnHref}
+            />
+            <RsvpJump label={tr("invite.rsvp_jump")} />
+          </>
         )}
       </div>
 
       <div className="invite__foot">
         {mode === "demo" ? (
           <Link href={`/create?lang=${locale}`}>{tr("demo.foot_cta")}</Link>
-        ) : shareUrl ? (
-          <TrackedLink
-            href={shareUrl}
-            event="share_click"
-            slug={slug}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {tr("invite.share")}
-          </TrackedLink>
+        ) : shareUrl && tgShareUrl ? (
+          <>
+            {tr("invite.share")}:{" "}
+            <TrackedLink
+              href={shareUrl}
+              event="share_click"
+              slug={slug}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp
+            </TrackedLink>
+            {" · "}
+            <TrackedLink
+              href={tgShareUrl}
+              event="share_click"
+              slug={slug}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Telegram
+            </TrackedLink>
+          </>
         ) : (
           <span>{tr("invite.share")}</span>
         )}

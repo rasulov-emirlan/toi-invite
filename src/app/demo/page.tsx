@@ -75,7 +75,7 @@ export default async function DemoPage({
     <div className="invite" lang={locale} style={paletteVars(tpl) as React.CSSProperties}>
       <div className="demo-banner">
         <span className="kicker">{tr("demo.kicker")}</span>
-        <Link href={`/create?lang=${locale}`} className="btn">
+        <Link href={`/create?lang=${locale}`} className="btn btn--outline-light">
           {tr("landing.cta")} →
         </Link>
       </div>
