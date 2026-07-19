@@ -29,8 +29,24 @@ export default function GuestBoard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  // Clipboard silently no-ops in some WhatsApp/TG WebViews — fall back to a
+  // selectable input under that guest's card instead of failing quietly.
+  const [copyFallbackId, setCopyFallbackId] = useState<number | null>(null);
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
+
+  /** One name per line — organizers paste whole family lists from Notes. */
+  async function addNames(raw: string): Promise<boolean> {
+    const names = raw
+      .split("\n")
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .slice(0, 100);
+    for (const n of names) {
+      if (!(await op({ op: "add", name: n }))) return false;
+    }
+    return names.length > 0;
+  }
 
   function personalUrl(g: GuestBoardRow): string {
     return `${origin}/i/${slug}?to=${encodeURIComponent(g.name)}&g=${g.token}`;
@@ -75,12 +91,14 @@ export default function GuestBoard({
         onSubmit={async (e) => {
           e.preventDefault();
           if (!name.trim() || busy) return;
-          if (await op({ op: "add", name })) setName("");
+          if (await addNames(name)) setName("");
         }}
       >
-        <input
+        <textarea
           value={name}
-          maxLength={80}
+          rows={1}
+          maxLength={4000}
+          aria-label={tr("rsvps.personal_name_ph")}
           placeholder={tr("rsvps.personal_name_ph")}
           onChange={(e) => setName(e.target.value)}
         />
@@ -88,10 +106,13 @@ export default function GuestBoard({
           {tr("rsvps.board_add")}
         </button>
       </form>
+      <p className="hint" style={{ margin: "-0.5rem 0 1rem" }}>
+        {tr("rsvps.board_add_hint")}
+      </p>
 
       {error && (
         <div className="alert" role="alert">
-          {tr("gifts.error")}
+          {tr("rsvps.board_error")}
         </div>
       )}
 
@@ -133,9 +154,10 @@ export default function GuestBoard({
                       try {
                         await navigator.clipboard.writeText(url);
                         setCopiedId(g.id);
+                        setCopyFallbackId(null);
                         setTimeout(() => setCopiedId(null), 1500);
                       } catch {
-                        /* clipboard blocked */
+                        setCopyFallbackId(g.id);
                       }
                     }}
                   >
@@ -145,11 +167,22 @@ export default function GuestBoard({
                     type="button"
                     className="btn btn--ghost guestcard__remove"
                     disabled={busy}
-                    onClick={() => void op({ op: "remove", id: g.id })}
+                    onClick={() => {
+                      // One 30px tap away from «Копировать» and irreversible —
+                      // the personal link and open/answer status die with it.
+                      if (window.confirm(tr("rsvps.board_confirm_remove").replace("{name}", g.name))) {
+                        void op({ op: "remove", id: g.id });
+                      }
+                    }}
                   >
                     {tr("gifts.remove")}
                   </button>
                 </div>
+                {copyFallbackId === g.id && (
+                  <div className="linkrow" style={{ marginTop: "0.5rem" }}>
+                    <input readOnly value={url} onFocus={(e) => e.target.select()} />
+                  </div>
+                )}
               </li>
             );
           })}
