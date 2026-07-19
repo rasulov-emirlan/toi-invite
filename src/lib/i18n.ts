@@ -17,6 +17,10 @@ const strings = {
   ru: {
     "brand.name": "Той-Invite",
 
+    "meta.title": "Той-Invite — онлайн-пригласительный на той",
+    "meta.description":
+      "Создайте красивое приглашение на той за 5 минут. Кыргызча жана орусча, с картой, календарём и учётом гостей.",
+    "landing.pricing_title": "0 сом — всё основное бесплатно",
     "landing.kicker": "ОНЛАЙН-ПРИГЛАСИТЕЛЬНЫЕ",
     "landing.title": "Пригласительный на той за 5 минут",
     "landing.subtitle":
@@ -273,6 +277,10 @@ const strings = {
   ky: {
     "brand.name": "Той-Invite",
 
+    "meta.title": "Той-Invite — тойго онлайн чакыруу",
+    "meta.description":
+      "5 мүнөттө тойго кооз чакыруу жасаңыз. Кыргызча жана орусча, карта, календарь жана меймандарды эсепке алуу менен.",
+    "landing.pricing_title": "0 сом — негизгинин баары бекер",
     "landing.kicker": "ОНЛАЙН ЧАКЫРУУ КАГАЗ",
     "landing.title": "Тойго чакыруу 5 мүнөттө",
     "landing.subtitle":

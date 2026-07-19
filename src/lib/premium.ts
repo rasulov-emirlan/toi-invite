@@ -100,6 +100,33 @@ export const PREMIUM_TIERS: PremiumTier[] = [
       ],
     },
   },
+  {
+    // The lalafo alternative is hand-made and full-service — this tier tests
+    // whether "we do it for you" (not templates) is what KG families pay for.
+    key: "concierge",
+    priceSom: 1990,
+    orderable: true,
+    popular: false,
+    names: { ru: "Под ключ", ky: "Даяр чечим" },
+    tagline: {
+      ru: "Пришлите данные в WhatsApp — сделаем за вас",
+      ky: "WhatsApp'ка маалымат жөнөтүңүз — өзүбүз жасайбыз",
+    },
+    features: {
+      ru: [
+        "Всё из Про",
+        "Заполним и оформим за вас",
+        "Готово в течение 2 часов",
+        "Правки до самого тоя",
+      ],
+      ky: [
+        "Пронун баары",
+        "Баарын өзүбүз толтуруп, кооздойбуз",
+        "2 сааттын ичинде даяр",
+        "Тойго чейин оңдоолор",
+      ],
+    },
+  },
 ];
 
 const BY_KEY = new Map(PREMIUM_TIERS.map((t) => [t.key, t]));

@@ -12,6 +12,7 @@ import "@fontsource/inter/700.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "./globals.css";
+import { headers } from "next/headers";
 import { BASE_URL } from "@/lib/base-url";
 
 export const metadata: Metadata = {
@@ -21,9 +22,12 @@ export const metadata: Metadata = {
     "Создайте красивое приглашение на той за 5 минут. Кыргызча жана орусча, с картой, календарём и учётом гостей.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Set by middleware from a validated ?lang param; invite pages override
+  // their own subtree with the invite's stored locale.
+  const lang = (await headers()).get("x-ui-lang") ?? "ru";
   return (
-    <html lang="ru">
+    <html lang={lang}>
       <body>{children}</body>
     </html>
   );
