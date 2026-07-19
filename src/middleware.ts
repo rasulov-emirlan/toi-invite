@@ -10,9 +10,10 @@ import type { NextRequest } from "next/server";
  */
 export function middleware(req: NextRequest) {
   const lang = req.nextUrl.searchParams.get("lang");
-  if (lang !== "ru" && lang !== "ky") return NextResponse.next();
   const headers = new Headers(req.headers);
-  headers.set("x-ui-lang", lang);
+  // Always strip the inbound header — it is ours to set, never the client's.
+  headers.delete("x-ui-lang");
+  if (lang === "ru" || lang === "ky") headers.set("x-ui-lang", lang);
   return NextResponse.next({ request: { headers } });
 }
 

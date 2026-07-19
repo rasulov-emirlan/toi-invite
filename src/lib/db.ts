@@ -446,6 +446,30 @@ function migrateInvitedGuests(handle: Database.Database) {
   );
 }
 
+/** Organizer pastes a whole list: insert atomically, stopping at the cap.
+ *  Returns how many were added (0 when the invite is missing or full). */
+export function addInvitedGuests(slug: string, names: string[]): number {
+  const conn = db();
+  const insert = conn.transaction((): number => {
+    const exists = prep("SELECT 1 FROM invites WHERE slug = ?").get(slug);
+    if (!exists) return 0;
+    const { c } = prep("SELECT COUNT(*) c FROM invited_guests WHERE invite_slug = ?").get(
+      slug,
+    ) as { c: number };
+    const room = Math.max(0, MAX_INVITED_PER_INVITE - c);
+    const toAdd = names.slice(0, room);
+    for (const name of toAdd) {
+      prep("INSERT INTO invited_guests (invite_slug, token, name) VALUES (?, ?, ?)").run(
+        slug,
+        generateSlug(GUEST_TOKEN_LENGTH),
+        name,
+      );
+    }
+    return toAdd.length;
+  });
+  return insert();
+}
+
 /** Organizer adds a guest to the list. Returns the new id, or null when the
  *  invite is missing or the list is full. */
 export function addInvitedGuest(slug: string, name: string): number | null {

@@ -186,12 +186,14 @@ export default function RsvpForm({
                 id="g-count"
                 type="number"
                 inputMode="numeric"
-                min={1}
+                min={6}
                 max={50}
                 value={guests}
                 aria-labelledby="g-count-label"
+                // Floor 6 while «6+» is selected, so the pressed segment and
+                // the submitted count can't contradict each other.
                 onChange={(e) =>
-                  setGuests(Math.max(1, Math.min(50, Number(e.target.value) || 1)))
+                  setGuests(Math.max(6, Math.min(50, Number(e.target.value) || 6)))
                 }
               />
             )}

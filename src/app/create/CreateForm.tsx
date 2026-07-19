@@ -223,6 +223,13 @@ export default function CreateForm({
       setDeadline(d.deadline ?? "");
       setProgram(Array.isArray(d.program) ? d.program : []);
       setPhotoId(d.photoId ?? null);
+      if (d.photoId) {
+        // Orphan uploads are GC'd after ~24h — a stale draft must not point
+        // at a photo that no longer exists.
+        void fetch(`/api/photo/${d.photoId}`, { method: "HEAD" }).then((r) => {
+          if (!r.ok) setPhotoId(null);
+        }).catch(() => {});
+      }
       if (
         d.hostPhone ||
         d.landmark ||

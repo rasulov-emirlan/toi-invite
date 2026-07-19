@@ -35,17 +35,16 @@ export default function GuestBoard({
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
 
-  /** One name per line — organizers paste whole family lists from Notes. */
+  /** One name per line — organizers paste whole family lists from Notes.
+   *  Sent as a single bulk request: one rate-limit token, one transaction. */
   async function addNames(raw: string): Promise<boolean> {
     const names = raw
       .split("\n")
       .map((n) => n.trim())
       .filter(Boolean)
       .slice(0, 100);
-    for (const n of names) {
-      if (!(await op({ op: "add", name: n }))) return false;
-    }
-    return names.length > 0;
+    if (names.length === 0) return false;
+    return op({ op: "add", names });
   }
 
   function personalUrl(g: GuestBoardRow): string {

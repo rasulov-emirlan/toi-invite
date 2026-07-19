@@ -58,7 +58,8 @@ export function rsvpClosed(
   const { end } = eventInstant(eventDate, eventTime);
   if (nowMs > end.getTime()) return true;
   if (deadline && /^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
-    const { end: deadlineEnd } = eventInstant(deadline, "23:59", 0);
+    // Midnight after the deadline day — the whole stated day stays open.
+    const { end: deadlineEnd } = eventInstant(deadline, "00:00", 24);
     if (nowMs > deadlineEnd.getTime()) return true;
   }
   return false;
