@@ -565,6 +565,45 @@ select:focus-visible {
   }
 }
 
+/* mobile preview toggle + full-screen preview overlay */
+.preview-fab {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 40;
+}
+
+.preview-fab .btn {
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 64rem) {
+  .preview-fab {
+    display: none;
+  }
+}
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  background: rgba(10, 10, 10, 0.5);
+}
+
+.preview-overlay .invite {
+  min-height: 100%;
+}
+
+.preview-overlay__bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+}
+
 /* ---------- demo page banner ---------- */
 .demo-banner {
   display: flex;

@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EVENT_TYPES, getEventType } from "@/lib/events";
 import { TEMPLATES, getTemplate, paletteVars } from "@/lib/templates";
-import { translator } from "@/lib/i18n";
-import { whatsappShareUrl } from "@/lib/share";
+import { translator, type StringKey } from "@/lib/i18n";
+import { telegramShareUrl, whatsappShareUrl } from "@/lib/share";
 import { normalizeMapUrl, programFromJson, LIMITS } from "@/lib/validation";
 import { displayNames, eventLabel } from "@/lib/invite-view";
 import { rememberInvite } from "@/lib/my-invites";
@@ -20,6 +20,78 @@ import InviteCard from "@/components/InviteCard";
 interface Result {
   slug: string;
   token: string;
+}
+
+/** Which server validation fields live inside the collapsed «Дополнительно». */
+const EXTRAS_FIELDS = new Set([
+  "host_phone",
+  "landmark",
+  "rsvp_deadline",
+  "dress_code",
+  "program",
+  "photo_id",
+]);
+
+/** Server validation field → the i18n key of its visible label. */
+const FIELD_LABEL_KEY: Record<string, StringKey> = {
+  honoree: "create.field_honoree",
+  partner: "create.field_partner",
+  event_date: "create.field_date",
+  event_time: "create.field_time",
+  venue_name: "create.field_venue",
+  venue_map_url: "create.field_map",
+  greeting: "create.field_greeting",
+  greeting_ru: "create.field_greeting",
+  greeting_ky: "create.field_greeting",
+  host_phone: "create.field_host_phone",
+  landmark: "create.field_landmark",
+  rsvp_deadline: "create.field_deadline",
+  dress_code: "create.field_dress_code",
+  program: "create.field_program",
+  photo_id: "create.field_photo",
+};
+
+/** Server validation field → DOM id, for scroll-to-first-error. */
+const FIELD_DOM_ID: Record<string, string> = {
+  honoree: "honoree",
+  partner: "partner",
+  event_date: "date",
+  event_time: "time",
+  venue_name: "venue",
+  venue_map_url: "map",
+  greeting: "greeting",
+  greeting_ru: "greeting",
+  greeting_ky: "greeting",
+  host_phone: "host-phone",
+  landmark: "landmark",
+  rsvp_deadline: "deadline",
+  dress_code: "dress",
+  photo_id: "photo",
+};
+
+/** Half-filled forms die constantly in WhatsApp's in-app browser (the WebView
+ *  gets reclaimed the moment the user checks a message) — mirror the draft. */
+const DRAFT_KEY = "toi_draft_v1";
+
+interface Draft {
+  eventType: EventTypeKey;
+  template: TemplateKey;
+  inviteLocale: Locale;
+  honoree: string;
+  partner: string;
+  date: string;
+  time: string;
+  venue: string;
+  mapUrl: string;
+  greetingRu: string;
+  greetingKy: string;
+  greetingTouched: Record<Locale, boolean>;
+  hostPhone: string;
+  landmark: string;
+  dressCode: string;
+  deadline: string;
+  program: ProgramItem[];
+  photoId: string | null;
 }
 
 /** Present in edit mode: the invite being edited plus its organizer token. */
@@ -103,6 +175,7 @@ export default function CreateForm({
           edit.initial.landmark ||
           edit.initial.dress_code ||
           edit.initial.rsvp_deadline ||
+          edit.initial.photo_id ||
           programFromJson(edit.initial.program_json).length > 0),
     ),
   );
@@ -112,10 +185,112 @@ export default function CreateForm({
   const [result, setResult] = useState<Result | null>(null);
   const [saved, setSaved] = useState(false);
   const [savedLocally, setSavedLocally] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const draftRestored = useRef(false);
 
   const tr = useMemo(() => translator(uiLocale), [uiLocale]);
   const evConfig = getEventType(eventType);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  // Restore a draft on mount (create mode only): the WhatsApp in-app browser
+  // routinely kills the page mid-fill, and retyping a toi invite on a phone
+  // is exactly the drop-off we can't afford.
+  useEffect(() => {
+    if (edit) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw) as Draft;
+      if (!d || (!d.honoree && !d.venue && !d.date)) return;
+      setEventType(d.eventType ?? "wedding");
+      setTemplate(d.template ?? "gold");
+      setInviteLocale(d.inviteLocale ?? initialLocale);
+      setHonoree(d.honoree ?? "");
+      setPartner(d.partner ?? "");
+      setDate(d.date ?? "");
+      setTime(d.time ?? "17:00");
+      setVenue(d.venue ?? "");
+      setMapUrl(d.mapUrl ?? "");
+      if (d.greetingTouched?.ru) setGreetingRu(d.greetingRu ?? "");
+      if (d.greetingTouched?.ky) setGreetingKy(d.greetingKy ?? "");
+      setGreetingTouched({
+        ru: Boolean(d.greetingTouched?.ru),
+        ky: Boolean(d.greetingTouched?.ky),
+      });
+      setHostPhone(d.hostPhone ?? "");
+      setLandmark(d.landmark ?? "");
+      setDressCode(d.dressCode ?? "");
+      setDeadline(d.deadline ?? "");
+      setProgram(Array.isArray(d.program) ? d.program : []);
+      setPhotoId(d.photoId ?? null);
+      if (
+        d.hostPhone ||
+        d.landmark ||
+        d.dressCode ||
+        d.deadline ||
+        d.photoId ||
+        (d.program?.length ?? 0) > 0
+      ) {
+        setShowExtras(true);
+      }
+    } catch {
+      /* corrupt draft — start fresh */
+    } finally {
+      draftRestored.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Mirror the draft after every change (tiny object; no debounce needed).
+  useEffect(() => {
+    if (edit || result || !draftRestored.current) return;
+    const d: Draft = {
+      eventType,
+      template,
+      inviteLocale,
+      honoree,
+      partner,
+      date,
+      time,
+      venue,
+      mapUrl,
+      greetingRu,
+      greetingKy,
+      greetingTouched,
+      hostPhone,
+      landmark,
+      dressCode,
+      deadline,
+      program,
+      photoId,
+    };
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+    } catch {
+      /* storage full/blocked — drafts are best-effort */
+    }
+  }, [
+    edit,
+    result,
+    eventType,
+    template,
+    inviteLocale,
+    honoree,
+    partner,
+    date,
+    time,
+    venue,
+    mapUrl,
+    greetingRu,
+    greetingKy,
+    greetingTouched,
+    hostPhone,
+    landmark,
+    dressCode,
+    deadline,
+    program,
+    photoId,
+  ]);
 
   // Keep each language's greeting synced to the chosen event until it's edited.
   useEffect(() => {
@@ -165,7 +340,30 @@ export default function CreateForm({
             body: JSON.stringify(payload()),
           });
       if (!res.ok) {
-        setError(tr("create.error_generic"));
+        // The API names the failing fields — point at them instead of a shrug.
+        // A failing field may sit inside the collapsed extras block.
+        let fields: string[] = [];
+        try {
+          const data = (await res.json()) as { fields?: unknown };
+          if (Array.isArray(data.fields)) fields = data.fields.filter((f): f is string => typeof f === "string");
+        } catch {
+          /* non-JSON error body */
+        }
+        const labels = [
+          ...new Set(fields.map((f) => FIELD_LABEL_KEY[f]).filter(Boolean)),
+        ].map((key) => tr(key));
+        if (labels.length > 0) {
+          setError(tr("create.error_fields").replace("{fields}", labels.join(", ")));
+          if (fields.some((f) => EXTRAS_FIELDS.has(f))) setShowExtras(true);
+          const domId = FIELD_DOM_ID[fields[0]];
+          if (domId) {
+            setTimeout(() => {
+              document.getElementById(domId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 60);
+          }
+        } else {
+          setError(tr("create.error_generic"));
+        }
         setSubmitting(false);
         return;
       }
@@ -191,6 +389,11 @@ export default function CreateForm({
         createdAt: new Date().toISOString(),
       });
       setSavedLocally(stored);
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* best-effort */
+      }
       setResult(data);
     } catch {
       setError(tr("create.error_generic"));
@@ -321,6 +524,35 @@ export default function CreateForm({
           <p className="hint">{evConfig.hints[uiLocale]}</p>
         </div>
 
+        {/* template — the emotional hook goes early, not as the 8th field */}
+        <div className="field">
+          <label>{tr("create.field_template")}</label>
+          <div className="tpl-choices" role="group" aria-label={tr("create.field_template")}>
+            {TEMPLATES.map((tpl) => (
+              <button
+                type="button"
+                key={tpl.key}
+                className="tpl-choice"
+                aria-pressed={template === tpl.key}
+                onClick={() => setTemplate(tpl.key)}
+              >
+                <span className="swatch">
+                  <span
+                    style={{
+                      backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0)), url(${tpl.heroImage})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                </span>
+                <span className="tpl-name" style={{ color: tpl.palette.accent }}>
+                  {tpl.names[uiLocale]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* honoree + partner */}
         <div className="field">
           <label htmlFor="honoree">{tr("create.field_honoree")}</label>
@@ -403,48 +635,6 @@ export default function CreateForm({
           <p className="hint">{tr("create.field_map_hint")}</p>
         </div>
 
-        {/* photo */}
-        <div className="field">
-          <label htmlFor="photo">{tr("create.field_photo")}</label>
-          {photoId ? (
-            <div className="photo-picked">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/api/photo/${photoId}`} alt="" />
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => {
-                  setPhotoId(null);
-                  if (photoInput.current) photoInput.current.value = "";
-                }}
-              >
-                {tr("create.photo_remove")}
-              </button>
-            </div>
-          ) : (
-            <input
-              id="photo"
-              ref={photoInput}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={photoBusy}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void uploadPhoto(f);
-              }}
-            />
-          )}
-          {photoBusy && <p className="hint">{tr("create.photo_uploading")}</p>}
-          {photoError && (
-            <div className="alert" role="alert">
-              {tr("create.photo_error")}
-            </div>
-          )}
-          {!photoId && !photoBusy && !photoError && (
-            <p className="hint">{tr("create.photo_hint")}</p>
-          )}
-        </div>
-
         {/* greeting — bilingual tabs */}
         <div className="field">
           <label htmlFor="greeting">{tr("create.field_greeting")}</label>
@@ -475,35 +665,6 @@ export default function CreateForm({
           <p className="hint">{tr("create.greeting_langs_hint")}</p>
         </div>
 
-        {/* template */}
-        <div className="field">
-          <label>{tr("create.field_template")}</label>
-          <div className="tpl-choices" role="group" aria-label={tr("create.field_template")}>
-            {TEMPLATES.map((tpl) => (
-              <button
-                type="button"
-                key={tpl.key}
-                className="tpl-choice"
-                aria-pressed={template === tpl.key}
-                onClick={() => setTemplate(tpl.key)}
-              >
-                <span className="swatch">
-                  <span
-                    style={{
-                      backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0)), url(${tpl.heroImage})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  />
-                </span>
-                <span className="tpl-name" style={{ color: tpl.palette.accent }}>
-                  {tpl.names[uiLocale]}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* optional extras: contact, landmark, dress code, deadline, programme */}
         <div className="field">
           <button
@@ -518,11 +679,55 @@ export default function CreateForm({
 
         {showExtras && (
           <>
+            {/* photo — optional and effortful (digging a photo out of the
+                gallery mid-form kills momentum), so it lives in extras */}
+            <div className="field">
+              <label htmlFor="photo">{tr("create.field_photo")}</label>
+              {photoId ? (
+                <div className="photo-picked">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/photo/${photoId}`} alt="" />
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    onClick={() => {
+                      setPhotoId(null);
+                      if (photoInput.current) photoInput.current.value = "";
+                    }}
+                  >
+                    {tr("create.photo_remove")}
+                  </button>
+                </div>
+              ) : (
+                <input
+                  id="photo"
+                  ref={photoInput}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={photoBusy}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void uploadPhoto(f);
+                  }}
+                />
+              )}
+              {photoBusy && <p className="hint">{tr("create.photo_uploading")}</p>}
+              {photoError && (
+                <div className="alert" role="alert">
+                  {tr("create.photo_error")}
+                </div>
+              )}
+              {!photoId && !photoBusy && !photoError && (
+                <p className="hint">{tr("create.photo_hint")}</p>
+              )}
+            </div>
             <div className="field">
               <label htmlFor="host-phone">{tr("create.field_host_phone")}</label>
               <input
                 id="host-phone"
                 type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 value={hostPhone}
                 onChange={(e) => setHostPhone(e.target.value)}
                 maxLength={20}
@@ -635,6 +840,36 @@ export default function CreateForm({
       </form>
 
       <LivePreview uiLocale={uiLocale} invite={previewInvite()} />
+
+      {/* On phones the desktop preview column sits below the submit button —
+          useless while filling. A floating toggle opens the same card. */}
+      <div className="preview-fab">
+        <button type="button" className="btn" onClick={() => setPreviewOpen(true)}>
+          {tr("create.preview_toggle")}
+        </button>
+      </div>
+      {previewOpen && (
+        <div className="preview-overlay" role="dialog" aria-modal="true">
+          <div
+            className="invite"
+            lang={inviteLocale}
+            style={paletteVars(getTemplate(template)) as React.CSSProperties}
+          >
+            <div className="preview-overlay__bar">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setPreviewOpen(false)}
+              >
+                ✕ {tr("create.preview_close")}
+              </button>
+            </div>
+            <div className="invite__inner">
+              <InviteCard invite={previewInvite()} locale={inviteLocale} mode="preview" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -701,6 +936,17 @@ function SuccessPanel({
         <p className="hint" style={{ marginTop: "0.5rem" }}>
           {tr("create.success_organizer_hint")}
         </p>
+        {/* Copy is fragile in the WhatsApp WebView (cookies/localStorage die
+            with it) — a message to yourself is the recovery that survives. */}
+        <a
+          className="btn btn--ghost"
+          style={{ marginTop: "0.75rem" }}
+          href={whatsappShareUrl(tr("create.send_self_text"), organizerUrl)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {tr("create.send_self")}
+        </a>
       </div>
 
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -711,6 +957,14 @@ function SuccessPanel({
           rel="noopener noreferrer"
         >
           {tr("create.share_whatsapp")}
+        </a>
+        <a
+          className="btn btn--ghost"
+          href={telegramShareUrl(tr("create.share_text"), publicUrl)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {tr("create.share_telegram")}
         </a>
         <a className="btn btn--ghost" href={`/i/${result.slug}`}>
           {tr("create.view_invite")} →

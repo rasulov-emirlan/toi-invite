@@ -189,6 +189,7 @@ function OrderForm({
           id="pi-phone"
           type="tel"
           inputMode="tel"
+          autoComplete="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           maxLength={24}
