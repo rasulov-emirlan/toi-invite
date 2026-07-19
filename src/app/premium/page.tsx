@@ -10,7 +10,7 @@ import PremiumOrder from "./PremiumOrder";
 export const metadata: Metadata = {
   title: "Премиум · Той-Invite",
   description:
-    "Именные приглашения для каждого гостя, премиум-шаблоны и экспорт для тамады. Оплата в сомах через mbank.",
+    "Приглашение без надписи «Той-Invite», личная помощь в WhatsApp и именные ссылки для гостей. Оплата в сомах через Finik.",
 };
 
 export default async function PremiumPage({
