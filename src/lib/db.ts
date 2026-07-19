@@ -21,6 +21,7 @@ import { generateSlug, generateToken } from "./slug";
 const DB_PATH = resolve(process.env.DB_PATH ?? "./data/toi.db");
 
 let _db: Database.Database | null = null;
+const statements = new Map<string, Database.Statement>();
 
 function db(): Database.Database {
   if (_db) return _db;
@@ -98,6 +99,14 @@ function db(): Database.Database {
   migrateInvitedGuests(handle);
   _db = handle;
   return _db;
+}
+
+function prep(sql: string): Database.Statement {
+  const cached = statements.get(sql);
+  if (cached) return cached;
+  const statement = db().prepare(sql);
+  statements.set(sql, statement);
+  return statement;
 }
 
 /**
@@ -249,7 +258,7 @@ export function listInvitesByOrganizerRef(ref: string, limit = 20): InviteRecord
 }
 
 export function getInvite(slug: string): InviteRecord | null {
-  const row = db().prepare("SELECT * FROM invites WHERE slug = ?").get(slug) as
+  const row = prep("SELECT * FROM invites WHERE slug = ?").get(slug) as
     | (Omit<InviteRecord, "event_type" | "template" | "locale"> & {
         event_type: string;
         template: string;
@@ -278,27 +287,24 @@ export function addRsvp(
 ): boolean {
   const conn = db();
   const upsert = conn.transaction((): boolean => {
-    const exists = conn.prepare("SELECT 1 FROM invites WHERE slug = ?").get(slug);
+    const exists = prep("SELECT 1 FROM invites WHERE slug = ?").get(slug);
     if (!exists) return false;
     // The same browser answering again (typo fix, changed mind) updates its own
     // row — otherwise every re-submit inflates the organizer's headcount. The
     // key is an opaque client id, NOT the typed name: a name is display data
     // and must never authorize overwriting someone else's answer.
     const prior = data.guest_ref
-      ? (conn
-          .prepare("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_ref = ?")
+      ? (prep("SELECT id FROM rsvps WHERE invite_slug = ? AND guest_ref = ?")
           .get(slug, data.guest_ref) as { id: number } | undefined)
       : undefined;
     // Only trust the guest-list link when the capability token resolves for
     // THIS invite — otherwise a crafted RSVP could light up someone's board.
     const gid = data.invited_guest_token
-      ? ((conn
-          .prepare("SELECT id FROM invited_guests WHERE invite_slug = ? AND token = ?")
+      ? ((prep("SELECT id FROM invited_guests WHERE invite_slug = ? AND token = ?")
           .get(slug, data.invited_guest_token) as { id: number } | undefined)?.id ?? null)
       : null;
     if (prior) {
-      conn
-        .prepare(
+      prep(
           // COALESCE(existing, new): the first personal-link association wins;
           // a later submit from the same browser can't reassign the answer to
           // a different guest row.
@@ -310,8 +316,7 @@ export function addRsvp(
         )
         .run(data.guest_name, data.attendance, data.guests_count, data.wish, gid, prior.id);
     } else {
-      conn
-        .prepare(
+      prep(
           `INSERT INTO rsvps (invite_slug, guest_name, guest_ref, attendance, guests_count, wish, invited_guest_id)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
@@ -323,8 +328,7 @@ export function addRsvp(
 }
 
 export function listRsvps(slug: string): RsvpRecord[] {
-  return db()
-    .prepare(
+  return prep(
       "SELECT * FROM rsvps WHERE invite_slug = ? ORDER BY created_at DESC, id DESC",
     )
     .all(slug) as RsvpRecord[];
@@ -333,8 +337,7 @@ export function listRsvps(slug: string): RsvpRecord[] {
 // ---------- gift wishlist ----------
 
 export function listGifts(slug: string): GiftRecord[] {
-  return db()
-    .prepare("SELECT * FROM gifts WHERE invite_slug = ? ORDER BY id")
+  return prep("SELECT * FROM gifts WHERE invite_slug = ? ORDER BY id")
     .all(slug) as GiftRecord[];
 }
 
@@ -375,17 +378,14 @@ export function claimGift(
   guestRef: string,
   guestName: string | null,
 ): ClaimResult {
-  const conn = db();
-  const info = conn
-    .prepare(
+  const info = prep(
       `UPDATE gifts
        SET claimed_ref = ?, claimed_name = ?, claimed_at = datetime('now')
        WHERE id = ? AND invite_slug = ? AND claimed_ref IS NULL`,
     )
     .run(guestRef, guestName, id, slug);
   if (info.changes > 0) return "claimed";
-  const row = conn
-    .prepare("SELECT claimed_ref FROM gifts WHERE id = ? AND invite_slug = ?")
+  const row = prep("SELECT claimed_ref FROM gifts WHERE id = ? AND invite_slug = ?")
     .get(id, slug) as { claimed_ref: string | null } | undefined;
   if (!row) return "not_found";
   // Tapping your own reserved item again is a no-op success, not a conflict.
@@ -480,8 +480,7 @@ export function deleteInvitedGuest(slug: string, id: number): boolean {
 
 /** Resolve a personal-link token to the internal guest id (null if unknown). */
 export function resolveInvitedGuest(slug: string, token: string): number | null {
-  const row = db()
-    .prepare("SELECT id FROM invited_guests WHERE invite_slug = ? AND token = ?")
+  const row = prep("SELECT id FROM invited_guests WHERE invite_slug = ? AND token = ?")
     .get(slug, token) as { id: number } | undefined;
   return row?.id ?? null;
 }
@@ -489,8 +488,7 @@ export function resolveInvitedGuest(slug: string, token: string): number | null 
 /** First open of a personal link stamps opened_at; later opens keep the first.
  *  Returns true only for the stamping open, so callers can count it once. */
 export function markInvitedGuestOpened(slug: string, token: string): boolean {
-  const info = db()
-    .prepare(
+  const info = prep(
       `UPDATE invited_guests SET opened_at = datetime('now')
        WHERE invite_slug = ? AND token = ? AND opened_at IS NULL`,
     )
@@ -514,8 +512,7 @@ export interface GuestBoardRow {
  * win even when the older row was updated later.
  */
 export function listGuestBoard(slug: string): GuestBoardRow[] {
-  return db()
-    .prepare(
+  return prep(
       `SELECT g.id, g.token, g.name, g.opened_at, r.attendance, r.guests_count
        FROM invited_guests g
        LEFT JOIN rsvps r ON r.id = (
@@ -538,13 +535,12 @@ let lastEventsPruneMs = 0;
 /** Append-only product event. Never throws — analytics must not break a request. */
 export function logEvent(name: string, slug: string | null = null, ref: string | null = null): void {
   try {
-    const conn = db();
-    conn.prepare("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)").run(name, slug, ref);
+    db();
+    prep("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)").run(name, slug, ref);
     const now = Date.now();
     if (now - lastEventsPruneMs > 3600_000) {
       lastEventsPruneMs = now;
-      conn
-        .prepare("DELETE FROM events WHERE created_at < datetime('now', ?)")
+      prep("DELETE FROM events WHERE created_at < datetime('now', ?)")
         .run(`-${EVENTS_RETENTION_DAYS} days`);
     }
   } catch (err) {

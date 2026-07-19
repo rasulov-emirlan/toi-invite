@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { getInvite } from "@/lib/db";
-import { isValidSlug } from "@/lib/slug";
+import Forbidden from "@/components/Forbidden";
+import { requireOrganizer } from "@/lib/organizer";
 import { isLocale, translator } from "@/lib/i18n";
-import { tokensMatch } from "@/lib/token";
 import type { Locale } from "@/lib/types";
 import CreateForm from "@/app/create/CreateForm";
 
@@ -19,25 +18,11 @@ export default async function EditPage({
   const { slug } = await params;
   const { token, lang } = await searchParams;
 
-  const invite = isValidSlug(slug) ? getInvite(slug) : null;
+  const invite = requireOrganizer(slug, token);
   const locale: Locale = isLocale(lang) ? lang : (invite?.locale ?? "ru");
   const tr = translator(locale);
 
-  const authorized = invite != null && tokensMatch(token, invite.organizer_token);
-
-  if (!invite || !authorized) {
-    return (
-      <main className="wrap wrap--narrow" style={{ paddingTop: "6rem", textAlign: "center" }}>
-        <span className="kicker kicker--red">403</span>
-        <h1 style={{ margin: "1rem 0" }}>{tr("rsvps.forbidden")}</h1>
-        <p style={{ marginTop: "2rem" }}>
-          <Link href="/" className="btn">
-            Той·Invite →
-          </Link>
-        </p>
-      </main>
-    );
-  }
+  if (!invite) return <Forbidden message={tr("rsvps.forbidden")} withHomeLink />;
 
   return (
     <>
