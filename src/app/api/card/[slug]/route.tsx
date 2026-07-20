@@ -68,8 +68,10 @@ export async function GET(
       headers: {
         "Content-Type": "image/jpeg",
         "Content-Disposition": `attachment; filename="${cardFilename(slug, formatParam)}"`,
-        // Origin cache is content-keyed; short client cache keeps repeat taps free.
-        "Cache-Control": "public, max-age=600",
+        // Never let a browser replay a stale card after an edit — the URL is
+        // stable but the content isn't. Repeat taps hit the content-keyed
+        // origin cache, so this costs nothing.
+        "Cache-Control": "no-store",
       },
     });
 
@@ -83,7 +85,9 @@ export async function GET(
       return new Response("render failed", { status: 500 });
     }
   }
-  if (!tryAcquireRenderSlot()) {
+  // Cards may hold at most 1 of the 2 shared slots: a burst of downloads must
+  // never starve the OG route (WhatsApp fetches a preview exactly once).
+  if (!tryAcquireRenderSlot(1)) {
     return new Response("busy", { status: 503, headers: { "Retry-After": "3" } });
   }
   const job = render(cacheKey);

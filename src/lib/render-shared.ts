@@ -61,11 +61,14 @@ export function heroDataUri(heroImage: string): Promise<string> {
 // At most two satori renders in flight across ALL image routes — one
 // container, and a render pins a core for hundreds of ms. Callers that can't
 // get a slot answer 503 + Retry-After instead of queueing unboundedly.
+// `limit` lets a lower-priority caller cap how deep it may fill the pool:
+// card downloads (human-triggered, retryable) pass 1 so an OG fetch
+// (crawler, one-shot) always finds a free slot unless OG itself holds both.
 let activeRenders = 0;
-const MAX_CONCURRENT_RENDERS = 2;
+export const MAX_CONCURRENT_RENDERS = 2;
 
-export function tryAcquireRenderSlot(): boolean {
-  if (activeRenders >= MAX_CONCURRENT_RENDERS) return false;
+export function tryAcquireRenderSlot(limit = MAX_CONCURRENT_RENDERS): boolean {
+  if (activeRenders >= limit) return false;
   activeRenders++;
   return true;
 }
