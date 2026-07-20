@@ -45,6 +45,10 @@ export function sampleInvite(locale: Locale): InviteDisplay {
             { time: "19:30", title: "Танцы и концерт" },
           ],
     ),
+    money_gifts_json: JSON.stringify([
+      { label: "mbank", value: "0555 123 456" },
+      { label: "Optima", value: "4169 5853 1234 5678" },
+    ]),
     photo_id: null,
     premium_tier: null,
   };

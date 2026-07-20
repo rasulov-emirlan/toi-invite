@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import sharp from "sharp";
 import { ImageResponse } from "next/og";
 import { getInvite } from "@/lib/db";
@@ -8,6 +6,13 @@ import { isLocale } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
 import { displayNames, eventLabel, formatEventDate } from "@/lib/invite-view";
 import { clientKey, ogLimiter } from "@/lib/ratelimit";
+import {
+  JpegCache,
+  heroDataUri,
+  loadFonts,
+  releaseRenderSlot,
+  tryAcquireRenderSlot,
+} from "@/lib/render-shared";
 import type { Locale } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -16,68 +21,10 @@ export const dynamic = "force-dynamic";
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-/**
- * Inter latin+cyrillic, loaded once per process from the @fontsource package
- * (woff — satori reads ttf/otf/woff, not woff2). Resolved from cwd rather than
- * require.resolve: the bundler would rewrite require.resolve, and both dev and
- * the Docker runtime keep node_modules at cwd. readFile follows pnpm symlinks.
- */
-let fontsPromise: Promise<Array<{ name: string; data: Buffer; weight: 400 | 700 }>> | null = null;
+const jpegCache = new JpegCache(300);
 
-function loadFonts() {
-  if (!fontsPromise) {
-    const dir = join(process.cwd(), "node_modules", "@fontsource", "inter", "files");
-    fontsPromise = Promise.all(
-      (
-        [
-          ["inter-latin-400-normal.woff", 400],
-          ["inter-cyrillic-400-normal.woff", 400],
-          ["inter-latin-700-normal.woff", 700],
-          ["inter-cyrillic-700-normal.woff", 700],
-        ] as const
-      ).map(async ([file, weight]) => ({
-        name: "Inter",
-        data: await readFile(join(dir, file)),
-        weight,
-      })),
-    );
-    // A transient FS error must not poison the cache with a rejected promise
-    // forever (every OG render would 500 until restart) — drop and retry later.
-    fontsPromise.catch(() => {
-      fontsPromise = null;
-    });
-  }
-  return fontsPromise;
-}
-
-/** Template hero art as a data URI (satori can't fetch relative URLs). */
-const heroCache = new Map<string, Promise<string>>();
-
-function heroDataUri(heroImage: string): Promise<string> {
-  let p = heroCache.get(heroImage);
-  if (!p) {
-    p = readFile(join(process.cwd(), "public", heroImage)).then(
-      (buf) => `data:image/jpeg;base64,${buf.toString("base64")}`,
-    );
-    p.catch(() => heroCache.delete(heroImage));
-    heroCache.set(heroImage, p);
-  }
-  return p;
-}
-
-/**
- * Rendered-JPEG cache: satori + sharp burn real CPU and WhatsApp's client
- * cache doesn't protect the origin. Key includes everything drawn, so an edit
- * naturally misses the cache; bounded LRU-ish (Map preserves insert order).
- */
-const jpegCache = new Map<string, Buffer>();
-const JPEG_CACHE_MAX = 300;
-
-// At most two renders in flight — one container, satori is CPU-bound.
 // Same-key fetchers (WhatsApp + Telegram hitting a freshly shared invite)
 // share one in-flight render instead of each burning a slot.
-let activeRenders = 0;
-const MAX_CONCURRENT_RENDERS = 2;
 const inflight = new Map<string, Promise<Buffer>>();
 
 export async function GET(
@@ -117,16 +64,15 @@ export async function GET(
       return new Response("render failed", { status: 500 });
     }
   }
-  if (activeRenders >= MAX_CONCURRENT_RENDERS) {
+  if (!tryAcquireRenderSlot()) {
     return new Response("busy", { status: 503, headers: { "Retry-After": "3" } });
   }
-  activeRenders++;
   const job = render(cacheKey);
   inflight.set(cacheKey, job);
   try {
     return jpegResponse(await job);
   } finally {
-    activeRenders--;
+    releaseRenderSlot();
     inflight.delete(cacheKey);
   }
 
@@ -207,11 +153,6 @@ export async function GET(
     // quietly drops og:images that big. Transcode to JPEG (~100KB).
     const png = Buffer.from(await image.arrayBuffer());
     const jpeg = await sharp(png).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
-    while (jpegCache.size >= JPEG_CACHE_MAX) {
-      const oldest = jpegCache.keys().next().value;
-      if (oldest === undefined) break;
-      jpegCache.delete(oldest);
-    }
     jpegCache.set(key, jpeg);
     return jpeg;
   }

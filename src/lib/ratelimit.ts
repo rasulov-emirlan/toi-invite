@@ -121,3 +121,7 @@ export const photoUploadLimiter = new TokenBucketLimiter(10, 1 / 10);
 // OG-image rendering burns real CPU (satori + JPEG transcode). WhatsApp/TG
 // fetch once per share; humans almost never hit it directly.
 export const ogLimiter = new TokenBucketLimiter(30, 1);
+
+// Card downloads render up to 4.3MP through satori+sharp — heavier than OG,
+// and humans download a handful, not thirty.
+export const cardLimiter = new TokenBucketLimiter(10, 1 / 3);

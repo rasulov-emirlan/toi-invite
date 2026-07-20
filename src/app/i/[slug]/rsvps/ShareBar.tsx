@@ -67,6 +67,12 @@ export default function ShareBar({
         <a className="btn btn--ghost" href={`/i/${slug}`}>
           {tr("create.view_invite")}
         </a>
+        <a className="btn btn--ghost" href={`/api/card/${slug}?format=story`} download>
+          {tr("create.download_story")} ↓
+        </a>
+        <a className="btn btn--ghost" href={`/api/card/${slug}?format=print`} download>
+          {tr("create.download_print")} ↓
+        </a>
         <a
           className="btn btn--ghost"
           href={`/i/${slug}/edit?token=${encodeURIComponent(token)}`}

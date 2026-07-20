@@ -25,6 +25,12 @@ export interface ProgramItem {
   title: string;
 }
 
+/** One money-gift requisite: "mbank — 0555 123 456". */
+export interface MoneyGiftItem {
+  label: string; // bank/wallet name
+  value: string; // phone / card / account the guest copies
+}
+
 export interface InviteRecord {
   slug: string;
   organizer_token: string;
@@ -47,6 +53,7 @@ export interface InviteRecord {
   rsvp_deadline: string | null; // ISO date
   dress_code: string | null;
   program_json: string | null; // JSON-serialized ProgramItem[]
+  money_gifts_json: string | null; // JSON-serialized MoneyGiftItem[]
   photo_id: string | null;
   organizer_ref: string | null;
   created_ref: string | null;
@@ -125,6 +132,7 @@ export interface InviteInput {
   rsvp_deadline?: string | null;
   dress_code?: string | null;
   program?: unknown;
+  money_gifts?: unknown;
   photo_id?: string | null;
   created_ref?: string | null;
 }
