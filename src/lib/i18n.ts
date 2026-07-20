@@ -216,6 +216,14 @@ const strings = {
     "invite.gifts_yours": "Вы забронировали — отменить",
     "invite.gifts_taken_note": "Этот подарок уже успели забронировать. Выберите другой.",
     "invite.gifts_error": "Не получилось. Попробуйте ещё раз.",
+    "invite.money_kicker": "ПОЗДРАВИТЬ ПЕРЕВОДОМ",
+    "invite.money_title": "Реквизиты для поздравлений",
+    "invite.money_hint":
+      "Если удобнее поздравить переводом — вот реквизиты. Нажмите, чтобы скопировать номер.",
+    "invite.money_copy": "Копировать",
+    "invite.money_copied": "Скопировано ✓",
+    "card.qr_caption": "Наведите камеру — откроется приглашение",
+    "card.made_on": "Создано на Той·Invite",
 
     "gifts.kicker": "СПИСОК ПОДАРКОВ",
     "gifts.title": "Что вам подарить",
@@ -247,6 +255,16 @@ const strings = {
     "create.field_deadline": "Ответить до (необязательно)",
     "create.field_program": "Программа тоя (необязательно)",
     "create.program_add": "+ Добавить пункт",
+    "create.field_money": "Реквизиты для поздравлений (необязательно)",
+    "create.field_money_hint":
+      "Если гости захотят поздравить переводом — укажите банк и номер. Появится на приглашении с кнопкой «копировать».",
+    "create.money_add": "+ Добавить реквизит",
+    "create.money_bank_ph": "mbank",
+    "create.money_value_ph": "0555 123 456",
+    "create.download_story": "Скачать открытку (JPG)",
+    "create.download_print": "Открытка для печати (A5, QR)",
+    "create.download_hint":
+      "Открытку можно отправить в WhatsApp как фото — для родных, которые не открывают ссылки. QR-код ведёт на приглашение.",
     "create.program_title_ph": "Встреча гостей",
     "create.field_photo": "Фото (необязательно)",
     "create.photo_hint":
@@ -488,6 +506,14 @@ const strings = {
     "invite.gifts_yours": "Сиз ээлегенсиз — баш тартуу",
     "invite.gifts_taken_note": "Бул белекти ээлеп коюшту. Башкасын тандаңыз.",
     "invite.gifts_error": "Болбой калды. Кайра аракет кылыңыз.",
+    "invite.money_kicker": "КОТОРУУ МЕНЕН КУТТУКТОО",
+    "invite.money_title": "Куттуктоо үчүн реквизиттер",
+    "invite.money_hint":
+      "Которуу менен куттуктоо ыңгайлуу болсо — реквизиттер бул жерде. Номерди көчүрүү үчүн басыңыз.",
+    "invite.money_copy": "Көчүрүү",
+    "invite.money_copied": "Көчүрүлдү ✓",
+    "card.qr_caption": "Камераны багыттаңыз — чакыруу ачылат",
+    "card.made_on": "Той·Invite'те жасалган",
 
     "gifts.kicker": "БЕЛЕКТЕР ТИЗМЕСИ",
     "gifts.title": "Сизге эмне белек кылалы",
@@ -519,6 +545,16 @@ const strings = {
     "create.field_deadline": "Жооп берүү мөөнөтү (милдеттүү эмес)",
     "create.field_program": "Той программасы (милдеттүү эмес)",
     "create.program_add": "+ Пункт кошуу",
+    "create.field_money": "Куттуктоо үчүн реквизиттер (милдеттүү эмес)",
+    "create.field_money_hint":
+      "Коноктор которуу менен куттуктагысы келсе — банк менен номерди жазыңыз. Чакырууда «көчүрүү» баскычы менен көрүнөт.",
+    "create.money_add": "+ Реквизит кошуу",
+    "create.money_bank_ph": "mbank",
+    "create.money_value_ph": "0555 123 456",
+    "create.download_story": "Открытканы жүктөп алуу (JPG)",
+    "create.download_print": "Басып чыгарууга (A5, QR)",
+    "create.download_hint":
+      "Открытканы WhatsApp'ка сүрөт катары жөнөтсө болот — шилтеме ачпаган улуулар үчүн. QR-код чакырууга алып барат.",
     "create.program_title_ph": "Меймандарды тосуу",
     "create.field_photo": "Сүрөт (милдеттүү эмес)",
     "create.photo_hint":

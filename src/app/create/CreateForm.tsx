@@ -5,13 +5,14 @@ import { EVENT_TYPES, getEventType } from "@/lib/events";
 import { TEMPLATES, getTemplate, paletteVars } from "@/lib/templates";
 import { translator, type StringKey } from "@/lib/i18n";
 import { telegramShareUrl, whatsappShareUrl } from "@/lib/share";
-import { normalizeMapUrl, programFromJson, LIMITS } from "@/lib/validation";
+import { moneyGiftsFromJson, normalizeMapUrl, programFromJson, LIMITS } from "@/lib/validation";
 import { displayNames, eventLabel } from "@/lib/invite-view";
 import { rememberInvite } from "@/lib/my-invites";
 import type {
   EventTypeKey,
   InviteDisplay,
   Locale,
+  MoneyGiftItem,
   ProgramItem,
   TemplateKey,
 } from "@/lib/types";
@@ -29,6 +30,7 @@ const EXTRAS_FIELDS = new Set([
   "rsvp_deadline",
   "dress_code",
   "program",
+  "money_gifts",
   "photo_id",
 ]);
 
@@ -48,6 +50,7 @@ const FIELD_LABEL_KEY: Record<string, StringKey> = {
   rsvp_deadline: "create.field_deadline",
   dress_code: "create.field_dress_code",
   program: "create.field_program",
+  money_gifts: "create.field_money",
   photo_id: "create.field_photo",
 };
 
@@ -66,6 +69,7 @@ const FIELD_DOM_ID: Record<string, string> = {
   landmark: "landmark",
   rsvp_deadline: "deadline",
   dress_code: "dress",
+  money_gifts: "money",
   photo_id: "photo",
 };
 
@@ -91,6 +95,7 @@ interface Draft {
   dressCode: string;
   deadline: string;
   program: ProgramItem[];
+  moneyGifts: MoneyGiftItem[];
   photoId: string | null;
 }
 
@@ -162,6 +167,9 @@ export default function CreateForm({
   const [program, setProgram] = useState<ProgramItem[]>(
     edit ? programFromJson(edit.initial.program_json) : [],
   );
+  const [moneyGifts, setMoneyGifts] = useState<MoneyGiftItem[]>(
+    edit ? moneyGiftsFromJson(edit.initial.money_gifts_json) : [],
+  );
   const [photoId, setPhotoId] = useState<string | null>(
     edit ? (edit.initial.photo_id ?? null) : null,
   );
@@ -176,7 +184,8 @@ export default function CreateForm({
           edit.initial.dress_code ||
           edit.initial.rsvp_deadline ||
           edit.initial.photo_id ||
-          programFromJson(edit.initial.program_json).length > 0),
+          programFromJson(edit.initial.program_json).length > 0 ||
+          moneyGiftsFromJson(edit.initial.money_gifts_json).length > 0),
     ),
   );
 
@@ -222,6 +231,7 @@ export default function CreateForm({
       setDressCode(d.dressCode ?? "");
       setDeadline(d.deadline ?? "");
       setProgram(Array.isArray(d.program) ? d.program : []);
+      setMoneyGifts(Array.isArray(d.moneyGifts) ? d.moneyGifts : []);
       if (d.photoId) {
         // Orphan uploads are GC'd after ~24h, so a stale draft may point at a
         // deleted photo: restore it only once the server confirms it exists,
@@ -239,7 +249,8 @@ export default function CreateForm({
         d.dressCode ||
         d.deadline ||
         d.photoId ||
-        (d.program?.length ?? 0) > 0
+        (d.program?.length ?? 0) > 0 ||
+        (d.moneyGifts?.length ?? 0) > 0
       ) {
         setShowExtras(true);
       }
@@ -272,6 +283,7 @@ export default function CreateForm({
       dressCode,
       deadline,
       program,
+      moneyGifts,
       photoId,
     };
     try {
@@ -299,6 +311,7 @@ export default function CreateForm({
     dressCode,
     deadline,
     program,
+    moneyGifts,
     photoId,
   ]);
 
@@ -328,6 +341,7 @@ export default function CreateForm({
       dress_code: dressCode,
       rsvp_deadline: deadline,
       program,
+      money_gifts: moneyGifts,
       photo_id: photoId ?? "",
       created_ref: createdRef ?? "",
     };
@@ -452,6 +466,14 @@ export default function CreateForm({
         program.filter((p) => p.title.trim()).length > 0
           ? JSON.stringify(program.filter((p) => p.title.trim()))
           : null,
+      money_gifts_json:
+        moneyGifts.filter((m) => m.label.trim() && m.value.trim()).length > 0
+          ? JSON.stringify(
+              moneyGifts
+                .filter((m) => m.label.trim() && m.value.trim())
+                .map((m) => ({ label: m.label.trim(), value: m.value.trim() })),
+            )
+          : null,
       photo_id: photoId,
       premium_tier: edit?.initial.premium_tier ?? null,
     };
@@ -481,6 +503,7 @@ export default function CreateForm({
     setDressCode("");
     setDeadline("");
     setProgram([]);
+    setMoneyGifts([]);
     setPhotoId(null);
     setGreetingTouched({ ru: false, ky: false });
     const defaults = getEventType(eventType).defaultGreeting;
@@ -826,6 +849,57 @@ export default function CreateForm({
                 </button>
               )}
             </div>
+
+            {/* money-gift requisites — cash is the default toi gift */}
+            <div className="field" id="money">
+              <label>{tr("create.field_money")}</label>
+              {moneyGifts.map((item, i) => (
+                <div className="moneyrow" key={i}>
+                  <input
+                    value={item.label}
+                    maxLength={LIMITS.moneyGiftLabel}
+                    placeholder={tr("create.money_bank_ph")}
+                    aria-label={tr("create.money_bank_ph")}
+                    onChange={(e) =>
+                      setMoneyGifts((p) =>
+                        p.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
+                      )
+                    }
+                  />
+                  <input
+                    value={item.value}
+                    maxLength={LIMITS.moneyGiftValue}
+                    placeholder={tr("create.money_value_ph")}
+                    aria-label={tr("create.money_value_ph")}
+                    onChange={(e) =>
+                      setMoneyGifts((p) =>
+                        p.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="copybtn"
+                    aria-label="−"
+                    onClick={() => setMoneyGifts((p) => p.filter((_, j) => j !== i))}
+                  >
+                    −
+                  </button>
+                </div>
+              ))}
+              {moneyGifts.length < LIMITS.moneyGiftItems && (
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() =>
+                    setMoneyGifts((p) => [...p, { label: "", value: "" }])
+                  }
+                >
+                  {tr("create.money_add")}
+                </button>
+              )}
+              <p className="hint">{tr("create.field_money_hint")}</p>
+            </div>
           </>
         )}
 
@@ -958,6 +1032,20 @@ function SuccessPanel({
         >
           {tr("create.send_self")}
         </a>
+      </div>
+
+      <div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <a className="btn btn--ghost" href={`/api/card/${result.slug}?format=story`} download>
+            {tr("create.download_story")} ↓
+          </a>
+          <a className="btn btn--ghost" href={`/api/card/${result.slug}?format=print`} download>
+            {tr("create.download_print")} ↓
+          </a>
+        </div>
+        <p className="hint" style={{ marginTop: "0.5rem" }}>
+          {tr("create.download_hint")}
+        </p>
       </div>
 
       <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>

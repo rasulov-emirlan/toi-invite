@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  cleanMoneyGifts,
   isSafeHttpUrl,
+  moneyGiftsFromJson,
   normalizeMapUrl,
   programFromJson,
   validateInvite,
@@ -299,6 +301,70 @@ describe("normalizeMapUrl", () => {
     expect(normalizeMapUrl("рядом с филармонией")).toBe("рядом с филармонией");
     expect(normalizeMapUrl("javascript:alert(1)")).toBe("javascript:alert(1)");
     expect(isSafeHttpUrl(normalizeMapUrl("javascript:alert(1)"))).toBe(false);
+  });
+});
+
+describe("money gifts (реквизиты)", () => {
+  it("accepts requisites through validateInvite and canonicalizes them", () => {
+    const r = validateInvite({
+      ...goodInvite,
+      money_gifts: [
+        { label: "mbank", value: "0555 123 456" },
+        { label: "Optima", value: "4169 5853 1234 5678" },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(JSON.parse(r.value.money_gifts_json!)).toEqual([
+        { label: "mbank", value: "0555 123 456" },
+        { label: "Optima", value: "4169 5853 1234 5678" },
+      ]);
+    }
+  });
+
+  it("is optional: absent input stays null", () => {
+    const r = validateInvite(goodInvite);
+    expect(r.ok && r.value.money_gifts_json).toBe(null);
+    expect(cleanMoneyGifts(undefined)).toBe(null);
+    expect(cleanMoneyGifts(null)).toBe(null);
+  });
+
+  it("skips blank rows but rejects half-filled ones", () => {
+    const blanks = cleanMoneyGifts([
+      { label: "", value: "" },
+      { label: "mbank", value: "0555" },
+    ]);
+    expect(JSON.parse(blanks!)).toHaveLength(1);
+    expect(cleanMoneyGifts([{ label: "mbank", value: "" }])).toBe(undefined);
+    expect(cleanMoneyGifts([{ label: "", value: "0555" }])).toBe(undefined);
+  });
+
+  it("rejects malformed shapes and overflow via validateInvite", () => {
+    for (const bad of ["mbank 0555", { label: "x", value: "y" }, [null], [["a"]]]) {
+      const r = validateInvite({ ...goodInvite, money_gifts: bad });
+      expect(!r.ok && r.errors.includes("money_gifts")).toBe(true);
+    }
+    const tooMany = cleanMoneyGifts(
+      Array.from({ length: LIMITS.moneyGiftItems + 1 }, (_, i) => ({
+        label: `банк${i}`,
+        value: "0555",
+      })),
+    );
+    expect(tooMany).toBe(undefined);
+    expect(
+      cleanMoneyGifts([{ label: "x".repeat(LIMITS.moneyGiftLabel + 1), value: "1" }]),
+    ).toBe(undefined);
+    expect(
+      cleanMoneyGifts([{ label: "mbank", value: "1".repeat(LIMITS.moneyGiftValue + 1) }]),
+    ).toBe(undefined);
+  });
+
+  it("moneyGiftsFromJson round-trips and degrades to empty on junk", () => {
+    const json = JSON.stringify([{ label: "mbank", value: "0555 123 456" }]);
+    expect(moneyGiftsFromJson(json)).toEqual([{ label: "mbank", value: "0555 123 456" }]);
+    expect(moneyGiftsFromJson(null)).toEqual([]);
+    expect(moneyGiftsFromJson("not json")).toEqual([]);
+    expect(moneyGiftsFromJson('{"a":1}')).toEqual([]);
   });
 });
 

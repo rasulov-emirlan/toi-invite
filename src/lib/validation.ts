@@ -7,6 +7,7 @@ import type {
   EventTypeKey,
   InviteInput,
   Locale,
+  MoneyGiftItem,
   ProgramItem,
   RsvpInput,
   TemplateKey,
@@ -29,6 +30,9 @@ export const LIMITS = {
   dressCode: 120,
   programItems: 12,
   programTitle: 80,
+  moneyGiftItems: 5,
+  moneyGiftLabel: 40,
+  moneyGiftValue: 60,
 } as const;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -115,6 +119,49 @@ export function programFromJson(json: string | null): ProgramItem[] {
   }
 }
 
+/**
+ * Parse + validate the money-gift requisites (реквизиты для перевода). Accepts
+ * an array of {label, value}; returns the canonical JSON string, null when
+ * empty/absent, or undefined when malformed — same contract as cleanProgram.
+ */
+export function cleanMoneyGifts(input: unknown): string | null | undefined {
+  if (input == null) return null;
+  if (!Array.isArray(input)) return undefined;
+  const items: MoneyGiftItem[] = [];
+  for (const it of input) {
+    if (it == null || typeof it !== "object" || Array.isArray(it)) return undefined;
+    const label = str((it as Record<string, unknown>).label);
+    const value = str((it as Record<string, unknown>).value);
+    if (label.length === 0 && value.length === 0) continue; // skip blank rows
+    // A requisite without the number to copy is unusable; a bare number
+    // without a bank name is ambiguous on a card guests read in a hurry.
+    if (label.length < 1 || label.length > LIMITS.moneyGiftLabel) return undefined;
+    if (value.length < 1 || value.length > LIMITS.moneyGiftValue) return undefined;
+    items.push({ label, value });
+  }
+  if (items.length === 0) return null;
+  if (items.length > LIMITS.moneyGiftItems) return undefined;
+  return JSON.stringify(items);
+}
+
+/** Parse stored money_gifts_json back into items. Lenient: bad data → empty. */
+export function moneyGiftsFromJson(json: string | null): MoneyGiftItem[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (it): it is MoneyGiftItem =>
+        it != null &&
+        typeof it === "object" &&
+        typeof it.label === "string" &&
+        typeof it.value === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
 /** Ids minted by the photo-upload endpoint (slug alphabet, fixed length). */
 const PHOTO_ID_RE = /^[a-z0-9]{12,32}$/;
 
@@ -143,6 +190,7 @@ export interface CleanInvite {
   rsvp_deadline: string | null;
   dress_code: string | null;
   program_json: string | null;
+  money_gifts_json: string | null;
   photo_id: string | null;
   created_ref: string | null;
 }
@@ -222,6 +270,9 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
   const program_json = cleanProgram(input.program);
   if (program_json === undefined) errors.push("program");
 
+  const money_gifts_json = cleanMoneyGifts(input.money_gifts);
+  if (money_gifts_json === undefined) errors.push("money_gifts");
+
   const photoRaw = str(input.photo_id);
   let photo_id: string | null = null;
   if (photoRaw.length > 0) {
@@ -256,6 +307,7 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
       rsvp_deadline,
       dress_code,
       program_json: program_json ?? null,
+      money_gifts_json: money_gifts_json ?? null,
       photo_id,
       created_ref,
     },

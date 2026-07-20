@@ -172,6 +172,7 @@ function migrateInvites(handle: Database.Database) {
   add("rsvp_deadline", "TEXT");
   add("dress_code", "TEXT");
   add("program_json", "TEXT");
+  add("money_gifts_json", "TEXT");
   add("photo_id", "TEXT");
   add("organizer_ref", "TEXT");
   add("created_ref", "TEXT");
@@ -193,12 +194,12 @@ export function createInvite(
       (slug, organizer_token, event_type, template, locale, honoree, partner,
        event_date, event_time, venue_name, venue_map_url, greeting,
        greeting_ru, greeting_ky, host_phone, landmark, rsvp_deadline,
-       dress_code, program_json, photo_id, organizer_ref, created_ref)
+       dress_code, program_json, money_gifts_json, photo_id, organizer_ref, created_ref)
     VALUES
       (@slug, @organizer_token, @event_type, @template, @locale, @honoree, @partner,
        @event_date, @event_time, @venue_name, @venue_map_url, @greeting,
        @greeting_ru, @greeting_ky, @host_phone, @landmark, @rsvp_deadline,
-       @dress_code, @program_json, @photo_id, @organizer_ref, @created_ref)
+       @dress_code, @program_json, @money_gifts_json, @photo_id, @organizer_ref, @created_ref)
   `);
 
   // Retry on the (astronomically unlikely) slug collision.
@@ -225,6 +226,7 @@ export function createInvite(
         rsvp_deadline: clean.rsvp_deadline,
         dress_code: clean.dress_code,
         program_json: clean.program_json,
+        money_gifts_json: clean.money_gifts_json,
         photo_id: clean.photo_id,
         organizer_ref: organizerRef,
         created_ref: clean.created_ref,
@@ -252,7 +254,8 @@ export function updateInvite(slug: string, clean: CleanInvite): boolean {
            greeting_ru = @greeting_ru, greeting_ky = @greeting_ky,
            host_phone = @host_phone, landmark = @landmark,
            rsvp_deadline = @rsvp_deadline, dress_code = @dress_code,
-           program_json = @program_json, photo_id = @photo_id
+           program_json = @program_json, money_gifts_json = @money_gifts_json,
+           photo_id = @photo_id
        WHERE slug = @slug`,
     )
     .run({ slug, ...editable });

@@ -1087,6 +1087,86 @@ select:focus-visible {
   }
 }
 
+/* money-gift block (реквизиты) — same visual family as the gift wishlist */
+.money {
+  margin-top: 2.5rem;
+  border-top: 2px solid var(--ac);
+  padding-top: 2rem;
+}
+
+.money h2 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  text-align: center;
+  color: var(--tink);
+  margin-bottom: 0.5rem;
+}
+
+.money__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.money__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--soft);
+  background: var(--tsurface);
+}
+
+.money__label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--tink);
+  white-space: nowrap;
+}
+
+.money__value {
+  flex: 1;
+  font-size: 1rem;
+  color: var(--tink);
+  overflow-wrap: anywhere;
+}
+
+.money__value-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--tink);
+  background: transparent;
+  border: 1px dashed var(--soft);
+  padding: 0.35rem 0.5rem;
+}
+
+.money__item .btn-ac {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 380px) {
+  .money__item {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+/* money-gift editor rows in the create form */
+.moneyrow {
+  display: grid;
+  grid-template-columns: minmax(6rem, 2fr) 3fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 /* organizer gift editor (dashboard) */
 .giftadd {
   display: flex;

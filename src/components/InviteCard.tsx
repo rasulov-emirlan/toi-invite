@@ -10,9 +10,10 @@ import {
   greetingFor,
   toCalendarEvent,
 } from "@/lib/invite-view";
-import { programFromJson } from "@/lib/validation";
+import { moneyGiftsFromJson, programFromJson } from "@/lib/validation";
 import type { InviteDisplay, Locale } from "@/lib/types";
 import Countdown from "./Countdown";
+import MoneyGifts from "./MoneyGifts";
 import RsvpForm from "./RsvpForm";
 import RsvpJump from "./RsvpJump";
 import TrackedLink from "./TrackedLink";
@@ -58,6 +59,7 @@ export default function InviteCard({
 
   const greeting = greetingFor(invite, locale);
   const program = programFromJson(invite.program_json);
+  const moneyGifts = moneyGiftsFromJson(invite.money_gifts_json);
   const hostDigits = invite.host_phone ? invite.host_phone.replace(/\D+/g, "") : null;
   // Deadline passed or the toi is over: stop collecting answers (the API
   // enforces the same rule). Preview/demo always show the open form.
@@ -202,6 +204,14 @@ export default function InviteCard({
         {mode !== "preview" && <Countdown targetMs={start.getTime()} locale={locale} />}
 
         {giftsSlot}
+
+        {moneyGifts.length > 0 && (
+          <MoneyGifts
+            items={moneyGifts}
+            locale={locale}
+            interactive={mode !== "preview"}
+          />
+        )}
 
         {invite.rsvp_deadline && !closed && (
           <p className="rsvp-deadline">

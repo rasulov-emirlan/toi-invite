@@ -27,6 +27,7 @@ const base: InviteRecord = {
   rsvp_deadline: null,
   dress_code: null,
   program_json: null,
+  money_gifts_json: null,
   photo_id: null,
   organizer_ref: null,
   created_ref: null,

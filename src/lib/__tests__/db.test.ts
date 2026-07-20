@@ -13,7 +13,7 @@ const invite: CleanInvite = {
   event_type: "wedding", template: "gold", locale: "ru", honoree: "Айбек", partner: "Нургүл",
   event_date: "2026-09-20", event_time: "18:00", venue_name: "Ала-Тоо", venue_map_url: null,
   greeting: "Будем рады видеть вас", greeting_ru: null, greeting_ky: null, host_phone: null,
-  landmark: null, rsvp_deadline: null, dress_code: null, program_json: null, photo_id: null, created_ref: null,
+  landmark: null, rsvp_deadline: null, dress_code: null, program_json: null, money_gifts_json: null, photo_id: null, created_ref: null,
 };
 
 beforeAll(async () => {
@@ -39,6 +39,17 @@ describe("db", () => {
     const created = api.createInvite(invite);
     expect(api.getInvite(created.slug)).toMatchObject({ slug: created.slug, organizer_token: created.token, honoree: invite.honoree });
     expect(api.getInvite("missing-slug")).toBeNull();
+  });
+
+  it("persists money-gift requisites through create and update", () => {
+    const json = JSON.stringify([{ label: "mbank", value: "0555 123 456" }]);
+    const created = api.createInvite({ ...invite, money_gifts_json: json });
+    expect(api.getInvite(created.slug)?.money_gifts_json).toBe(json);
+    const next = JSON.stringify([{ label: "Optima", value: "4169" }]);
+    expect(api.updateInvite(created.slug, { ...invite, money_gifts_json: next })).toBe(true);
+    expect(api.getInvite(created.slug)?.money_gifts_json).toBe(next);
+    expect(api.updateInvite(created.slug, { ...invite, money_gifts_json: null })).toBe(true);
+    expect(api.getInvite(created.slug)?.money_gifts_json).toBeNull();
   });
 
   it("inserts and updates one RSVP per guest_ref", () => {

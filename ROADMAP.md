@@ -16,17 +16,18 @@ everywhere WhatsApp is, landing OG card + hero invite peek, Cyrillic-capable
 display font + humanized guest typography, concierge fake-door tier, analytics
 hardening + db tests.
 
+## Shipped 2026-07-20 (PR #15)
+
+1. ~~**Downloadable image invite**~~ — `/api/card/[slug]?format=story|print`
+   (1080×1920 story + A5 300dpi with QR → RSVP link), watermarked on free /
+   clean on premium; download buttons on create-success + organizer ShareBar.
+2. ~~**Money-gift block**~~ — up to 5 requisites per invite, one-tap copy,
+   free tier (adoption driver); the premium unlock is the watermark-free
+   открытка instead. Follow-up idea kept: a private «кто поздравил» thank-you
+   ledger for the organizer.
+
 ## Next up — high impact, low effort
 
-1. **Downloadable image invite** («Скачать открытку», 1080×1920 story + A5
-   print with QR → RSVP link). The dominant KG invite format is a JPG in a
-   family WhatsApp group; lalafo makers sell exactly this. The satori/sharp OG
-   pipeline (`/api/og/[slug]`) already renders the card — add a story-ratio
-   layout per template. Serves elders who never click.
-2. **Money-gift block** (реквизиты: mbank / O!Деньги / Optima + copy button,
-   opt-in per invite). Cash is the default toi gift; KZ competitors ship this
-   as the premium feature. The most credible paid unlock we can build; likely
-   pairs with a private "кто поздравил" thank-you ledger for the organizer.
 3. **Guest phone numbers on the board** + `wa.me/<phone>` direct sends. Turns
    reminders from copy-paste labor into one tap per guest — that *is* the
    management job for a 150-guest toi.
