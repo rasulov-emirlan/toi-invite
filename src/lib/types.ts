@@ -19,6 +19,10 @@ export type PremiumTierKey = "free" | "premium" | "pro" | "concierge";
 
 export type Attendance = "yes" | "no";
 
+/** How the uploaded photo is composed on the card/OG/video surfaces:
+ *  a hero band above the text ("hero") or a full-bleed background ("bg"). */
+export type PhotoStyle = "hero" | "bg";
+
 /** One line of the toi programme: "17:00 — Встреча гостей". */
 export interface ProgramItem {
   time: string; // HH:MM (24h)
@@ -55,6 +59,8 @@ export interface InviteRecord {
   program_json: string | null; // JSON-serialized ProgramItem[]
   money_gifts_json: string | null; // JSON-serialized MoneyGiftItem[]
   photo_id: string | null;
+  /** NULL means "hero" — the default composition. */
+  photo_style: string | null;
   organizer_ref: string | null;
   created_ref: string | null;
   /** Paid tier key once a Finik payment for this invite settles. */
@@ -134,6 +140,7 @@ export interface InviteInput {
   program?: unknown;
   money_gifts?: unknown;
   photo_id?: string | null;
+  photo_style?: string | null;
   created_ref?: string | null;
 }
 

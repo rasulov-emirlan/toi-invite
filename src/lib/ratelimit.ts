@@ -125,3 +125,7 @@ export const ogLimiter = new TokenBucketLimiter(30, 1);
 // Card downloads render up to 4.3MP through satori+sharp — heavier than OG,
 // and humans download a handful, not thirty.
 export const cardLimiter = new TokenBucketLimiter(10, 1 / 3);
+
+// Video endpoint: mostly cheap status polls (a render waits ~a minute at 1
+// poll per 2.5s); the expensive encode itself is single-flight process-wide.
+export const videoLimiter = new TokenBucketLimiter(60, 1);

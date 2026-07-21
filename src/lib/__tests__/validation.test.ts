@@ -264,6 +264,19 @@ describe("validateInvite new fields", () => {
     expect(!badPhoto.ok && badPhoto.errors.includes("photo_id")).toBe(true);
   });
 
+  it("photo_style rides with the photo: bg stored, hero canonicalized to NULL, junk rejected", () => {
+    const photo_id = "abc123def456";
+    const bg = validateInvite({ ...goodInvite, photo_id, photo_style: "bg" });
+    expect(bg.ok && bg.value.photo_style).toBe("bg");
+    const hero = validateInvite({ ...goodInvite, photo_id, photo_style: "hero" });
+    expect(hero.ok && hero.value.photo_style).toBe(null);
+    // Without a photo the style is meaningless — dropped, not an error.
+    const orphan = validateInvite({ ...goodInvite, photo_style: "bg" });
+    expect(orphan.ok && orphan.value.photo_style).toBe(null);
+    const junk = validateInvite({ ...goodInvite, photo_id, photo_style: "sparkles" });
+    expect(!junk.ok && junk.errors.includes("photo_style")).toBe(true);
+  });
+
   it("skips blank program rows and rejects overlong programs", () => {
     const blanks = validateInvite({
       ...goodInvite,

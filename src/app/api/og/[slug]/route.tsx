@@ -9,7 +9,9 @@ import { clientKey, ogLimiter } from "@/lib/ratelimit";
 import {
   JpegCache,
   heroDataUri,
+  hexToRgba,
   loadFonts,
+  photoDataUri,
   releaseRenderSlot,
   tryAcquireRenderSlot,
 } from "@/lib/render-shared";
@@ -53,7 +55,12 @@ export async function GET(
   const when = `${formatEventDate(invite.event_date, locale)} · ${invite.event_time}`;
 
   const venueName = invite.venue_name;
-  const cacheKey = [slug, locale, invite.template, label, names, when, venueName].join("|");
+  // Captured as a const: narrowing doesn't reach the hoisted render() closure.
+  const photoId = invite.photo_id;
+  const cacheKey = [
+    slug, locale, invite.template, label, names, when, venueName,
+    invite.photo_id ?? "",
+  ].join("|");
   const cached = jpegCache.get(cacheKey);
   if (cached) return jpegResponse(cached);
   const pending = inflight.get(cacheKey);
@@ -78,9 +85,16 @@ export async function GET(
 
   async function render(key: string): Promise<Buffer> {
 
-  const [fonts, bg] = await Promise.all([loadFonts(), heroDataUri(tpl.heroImage)]);
+  const [fonts, art, photo] = await Promise.all([
+    loadFonts(),
+    heroDataUri(tpl.heroImage),
+    photoDataUri(photoId).catch(() => null),
+  ]);
 
   const namesSize = names.length > 26 ? 54 : names.length > 16 ? 64 : 76;
+  // With a couple photo the preview becomes a split card: photo on the left
+  // dissolving into the palette background, text centered in the rest.
+  const photoW = 460;
 
   const image = new ImageResponse(
     (
@@ -89,20 +103,43 @@ export async function GET(
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: tpl.palette.bg,
           fontFamily: "Inter",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={bg}
-          width={WIDTH}
-          height={HEIGHT}
-          style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
-        />
+        {photo ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={photo}
+              width={photoW}
+              height={HEIGHT}
+              style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: photoW,
+                height: HEIGHT,
+                backgroundImage: `linear-gradient(to right, ${hexToRgba(tpl.palette.bg, 0)} 55%, ${tpl.palette.bg} 98%)`,
+              }}
+            />
+            <div style={{ display: "flex", width: photoW - 80, height: HEIGHT }} />
+          </>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={art}
+            width={WIDTH}
+            height={HEIGHT}
+            style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
+          />
+        )}
         <div
           style={{
             display: "flex",
@@ -112,6 +149,7 @@ export async function GET(
             textAlign: "center",
             maxWidth: 860,
             padding: "0 40px",
+            flexGrow: 1,
           }}
         >
           <div

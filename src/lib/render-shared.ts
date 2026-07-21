@@ -1,6 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { readPhoto } from "./photos";
 
 /**
  * Shared plumbing for the satori/sharp image surfaces (`/api/og/[slug]` and
@@ -56,6 +57,25 @@ export function heroDataUri(heroImage: string): Promise<string> {
     heroCache.set(heroImage, p);
   }
   return p;
+}
+
+/**
+ * The invite's uploaded photo as a data URI, or null when absent/unreadable.
+ * Uncached: uploads are per-invite (unlike the handful of template heroes) and
+ * already sit re-encoded at ≤1600px on local disk.
+ */
+export async function photoDataUri(photoId: string | null): Promise<string | null> {
+  if (!photoId) return null;
+  const buf = await readPhoto(photoId);
+  return buf ? `data:image/jpeg;base64,${buf.toString("base64")}` : null;
+}
+
+/** #rrggbb → rgba() — satori gradients need explicit alpha stops. */
+export function hexToRgba(hex: string, alpha: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
 // At most two satori renders in flight across ALL image routes — one

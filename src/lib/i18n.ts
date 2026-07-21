@@ -225,6 +225,10 @@ const strings = {
     "card.qr_caption": "Наведите камеру — откроется приглашение",
     "card.made_on": "Создано на Той·Invite",
 
+    "video.opening_title": "Приглашение",
+    "video.time_at": "начало в",
+    "video.venue_kicker": "Место проведения",
+
     "gifts.kicker": "СПИСОК ПОДАРКОВ",
     "gifts.title": "Что вам подарить",
     "gifts.hint": "Добавьте желаемые подарки — гости увидят список в приглашении и забронируют, кто что дарит. Так подарки не повторятся.",
@@ -263,6 +267,9 @@ const strings = {
     "create.money_value_ph": "0555 123 456",
     "create.download_story": "Скачать открытку (JPG)",
     "create.download_print": "Открытка для печати (A5, QR)",
+    "create.download_video": "Видео-приглашение (MP4)",
+    "create.video_rendering": "Готовим видео… обычно это занимает до минуты. Страницу можно не закрывать — скачивание начнётся само.",
+    "create.video_error": "Не получилось создать видео. Попробуйте ещё раз через минуту.",
     "create.download_hint":
       "Открытку можно отправить в WhatsApp как фото — для родных, которые не открывают ссылки. QR-код ведёт на приглашение.",
     "create.program_title_ph": "Встреча гостей",
@@ -272,6 +279,11 @@ const strings = {
     "create.photo_uploading": "Загружаем фото…",
     "create.photo_remove": "Убрать фото",
     "create.photo_error": "Не удалось загрузить фото. Файл до 5 МБ, JPG/PNG/WebP.",
+    "create.photo_style_label": "Фото на открытке",
+    "create.photo_style_hero": "Сверху",
+    "create.photo_style_bg": "Фоном",
+    "create.photo_style_hint":
+      "«Сверху» — фото полосой над текстом. «Фоном» — открытка целиком на вашем фото.",
 
     "invite.landmark": "Ориентир",
     "invite.dress_code": "Дресс-код",
@@ -515,6 +527,10 @@ const strings = {
     "card.qr_caption": "Камераны багыттаңыз — чакыруу ачылат",
     "card.made_on": "Той·Invite'те жасалган",
 
+    "video.opening_title": "Чакыруу",
+    "video.time_at": "башталышы",
+    "video.venue_kicker": "Өткөрүлүүчү жер",
+
     "gifts.kicker": "БЕЛЕКТЕР ТИЗМЕСИ",
     "gifts.title": "Сизге эмне белек кылалы",
     "gifts.hint": "Каалаган белектерди кошуңуз — меймандар тизмени чакыруудан көрүп, ким эмне белек кыларын ээлеп коюшат. Ошентип белектер кайталанбайт.",
@@ -553,6 +569,9 @@ const strings = {
     "create.money_value_ph": "0555 123 456",
     "create.download_story": "Открытканы жүктөп алуу (JPG)",
     "create.download_print": "Басып чыгарууга (A5, QR)",
+    "create.download_video": "Видео-чакыруу (MP4)",
+    "create.video_rendering": "Видео даярдалууда… адатта бир мүнөткө чейин созулат. Баракты жаппай туруңуз — жүктөө өзү башталат.",
+    "create.video_error": "Видео түзүлбөй калды. Бир мүнөттөн кийин кайра аракет кылыңыз.",
     "create.download_hint":
       "Открытканы WhatsApp'ка сүрөт катары жөнөтсө болот — шилтеме ачпаган улуулар үчүн. QR-код чакырууга алып барат.",
     "create.program_title_ph": "Меймандарды тосуу",
@@ -562,6 +581,11 @@ const strings = {
     "create.photo_uploading": "Сүрөт жүктөлүүдө…",
     "create.photo_remove": "Сүрөттү алып салуу",
     "create.photo_error": "Сүрөт жүктөлбөй калды. Файл 5 МБга чейин, JPG/PNG/WebP.",
+    "create.photo_style_label": "Открыткадагы сүрөт",
+    "create.photo_style_hero": "Үстүндө",
+    "create.photo_style_bg": "Фон катары",
+    "create.photo_style_hint":
+      "«Үстүндө» — сүрөт тексттин үстүндө тилке болот. «Фон катары» — бүт открытка сиздин сүрөттө.",
 
     "invite.landmark": "Багыт-белги",
     "invite.dress_code": "Дресс-код",

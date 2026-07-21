@@ -8,6 +8,7 @@ import type {
   InviteInput,
   Locale,
   MoneyGiftItem,
+  PhotoStyle,
   ProgramItem,
   RsvpInput,
   TemplateKey,
@@ -169,6 +170,10 @@ export function isValidPhotoId(v: unknown): v is string {
   return typeof v === "string" && PHOTO_ID_RE.test(v);
 }
 
+export function isPhotoStyle(v: unknown): v is PhotoStyle {
+  return v === "hero" || v === "bg";
+}
+
 /** Attribution ref carried by the viral-loop link (?ref=<slug or tag>). */
 const CREATED_REF_RE = /^[A-Za-z0-9_-]{1,32}$/;
 
@@ -192,6 +197,7 @@ export interface CleanInvite {
   program_json: string | null;
   money_gifts_json: string | null;
   photo_id: string | null;
+  photo_style: string | null;
   created_ref: string | null;
 }
 
@@ -280,6 +286,15 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
     else photo_id = photoRaw;
   }
 
+  // Composition preference travels with the photo: without one it is
+  // meaningless, so it degrades to NULL (= hero) rather than erroring.
+  const styleRaw = str(input.photo_style);
+  let photo_style: string | null = null;
+  if (photo_id && styleRaw.length > 0) {
+    if (!isPhotoStyle(styleRaw)) errors.push("photo_style");
+    else if (styleRaw !== "hero") photo_style = styleRaw;
+  }
+
   // Attribution is best-effort: a malformed ref degrades to "no ref" rather
   // than blocking the creation it is only meant to measure.
   const refRaw = str(input.created_ref);
@@ -309,6 +324,7 @@ export function validateInvite(input: InviteInput): ValidationResult<CleanInvite
       program_json: program_json ?? null,
       money_gifts_json: money_gifts_json ?? null,
       photo_id,
+      photo_style,
       created_ref,
     },
   };
