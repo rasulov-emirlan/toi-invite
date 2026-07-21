@@ -12,7 +12,9 @@ import { cardLimiter, clientKey } from "@/lib/ratelimit";
 import {
   JpegCache,
   heroDataUri,
+  hexToRgba,
   loadFonts,
+  photoDataUri,
   releaseRenderSlot,
   tryAcquireRenderSlot,
 } from "@/lib/render-shared";
@@ -57,10 +59,14 @@ export async function GET(
   const landmark = invite.landmark;
   // Paid tiers bought «Без надписи Той-Invite» — the download honors it too.
   const watermark = !invite.premium_tier;
+  // Captured as consts: narrowing doesn't reach the hoisted render() closure.
+  const photoId = invite.photo_id;
+  const photoStyle = invite.photo_style;
 
   const cacheKey = [
     slug, formatParam, locale, invite.template, label, names, when,
     venueName, landmark ?? "", watermark ? "wm" : "clean",
+    invite.photo_id ?? "", invite.photo_style ?? "",
   ].join("|");
 
   const respond = (jpeg: Buffer) =>
@@ -108,9 +114,10 @@ export async function GET(
     const publicUrl = `${BASE_URL}/i/${slug}`;
     const shortUrl = publicUrl.replace(/^https?:\/\//, "");
 
-    const [fonts, bg, qr] = await Promise.all([
+    const [fonts, art, photo, qr] = await Promise.all([
       loadFonts(),
       heroDataUri(tpl.heroImage),
+      photoDataUri(photoId).catch(() => null),
       QRCode.toDataURL(publicUrl, {
         errorCorrectionLevel: "M",
         margin: 1,
@@ -118,6 +125,10 @@ export async function GET(
         color: { dark: tpl.palette.ink, light: "#ffffff" },
       }),
     ]);
+    // The couple's own photo beats template art; "bg" additionally runs it
+    // full-bleed under a gradient instead of as the top band.
+    const bg = photo ?? art;
+    const fullBleed = photo != null && photoStyle === "bg";
 
     const heroH = Math.round(height * 0.32);
     const namesSize = Math.round((names.length > 26 ? 60 : names.length > 16 ? 72 : 84) * s);
@@ -135,26 +146,52 @@ export async function GET(
             fontFamily: "Inter",
           }}
         >
-          {/* hero art band, fading into the page background */}
-          <div style={{ display: "flex", position: "relative", width, height: heroH }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={bg}
-              width={width}
-              height={heroH}
-              style={{ objectFit: "cover" }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                bottom: 0,
-                width,
-                height: Math.round(heroH * 0.4),
-                backgroundImage: `linear-gradient(to bottom, rgba(255,255,255,0), ${tpl.palette.bg})`,
-              }}
-            />
-          </div>
+          {fullBleed ? (
+            <>
+              {/* full-bleed photo dissolving into the page color where the
+                  text lives — the top ~40% stays photo, the rest reads as the
+                  normal card so contrast ratios hold */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={bg}
+                width={width}
+                height={height}
+                style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width,
+                  height,
+                  backgroundImage: `linear-gradient(to bottom, ${hexToRgba(tpl.palette.bg, 0)} 26%, ${hexToRgba(tpl.palette.bg, 0.82)} 44%, ${hexToRgba(tpl.palette.bg, 0.97)} 56%, ${tpl.palette.bg} 68%)`,
+                }}
+              />
+              <div style={{ display: "flex", width, height: heroH }} />
+            </>
+          ) : (
+            /* hero band (couple photo or template art), fading into the page */
+            <div style={{ display: "flex", position: "relative", width, height: heroH }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={bg}
+                width={width}
+                height={heroH}
+                style={{ objectFit: "cover" }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  bottom: 0,
+                  width,
+                  height: Math.round(heroH * 0.4),
+                  backgroundImage: `linear-gradient(to bottom, ${hexToRgba(tpl.palette.bg, 0)}, ${tpl.palette.bg})`,
+                }}
+              />
+            </div>
+          )}
 
           {/* the invitation itself */}
           <div

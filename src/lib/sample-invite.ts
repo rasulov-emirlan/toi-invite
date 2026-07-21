@@ -50,6 +50,7 @@ export function sampleInvite(locale: Locale): InviteDisplay {
       { label: "Optima", value: "4169 5853 1234 5678" },
     ]),
     photo_id: null,
+    photo_style: null,
     premium_tier: null,
   };
 }

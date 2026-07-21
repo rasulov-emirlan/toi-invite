@@ -29,6 +29,7 @@ const base: InviteRecord = {
   program_json: null,
   money_gifts_json: null,
   photo_id: null,
+  photo_style: null,
   organizer_ref: null,
   created_ref: null,
   premium_tier: null,

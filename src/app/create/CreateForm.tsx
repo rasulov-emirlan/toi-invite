@@ -13,6 +13,7 @@ import type {
   InviteDisplay,
   Locale,
   MoneyGiftItem,
+  PhotoStyle,
   ProgramItem,
   TemplateKey,
 } from "@/lib/types";
@@ -97,6 +98,7 @@ interface Draft {
   program: ProgramItem[];
   moneyGifts: MoneyGiftItem[];
   photoId: string | null;
+  photoStyle?: PhotoStyle;
 }
 
 /** Present in edit mode: the invite being edited plus its organizer token. */
@@ -173,6 +175,9 @@ export default function CreateForm({
   const [photoId, setPhotoId] = useState<string | null>(
     edit ? (edit.initial.photo_id ?? null) : null,
   );
+  const [photoStyle, setPhotoStyle] = useState<PhotoStyle>(
+    edit && edit.initial.photo_style === "bg" ? "bg" : "hero",
+  );
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoError, setPhotoError] = useState(false);
   const photoInput = useRef<HTMLInputElement | null>(null);
@@ -232,6 +237,7 @@ export default function CreateForm({
       setDeadline(d.deadline ?? "");
       setProgram(Array.isArray(d.program) ? d.program : []);
       setMoneyGifts(Array.isArray(d.moneyGifts) ? d.moneyGifts : []);
+      if (d.photoStyle === "bg") setPhotoStyle("bg");
       if (d.photoId) {
         // Orphan uploads are GC'd after ~24h, so a stale draft may point at a
         // deleted photo: restore it only once the server confirms it exists,
@@ -285,6 +291,7 @@ export default function CreateForm({
       program,
       moneyGifts,
       photoId,
+      photoStyle,
     };
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
@@ -313,6 +320,7 @@ export default function CreateForm({
     program,
     moneyGifts,
     photoId,
+    photoStyle,
   ]);
 
   // Keep each language's greeting synced to the chosen event until it's edited.
@@ -343,6 +351,7 @@ export default function CreateForm({
       program,
       money_gifts: moneyGifts,
       photo_id: photoId ?? "",
+      photo_style: photoId ? photoStyle : "",
       created_ref: createdRef ?? "",
     };
   }
@@ -475,6 +484,7 @@ export default function CreateForm({
             )
           : null,
       photo_id: photoId,
+      photo_style: photoId && photoStyle !== "hero" ? photoStyle : null,
       premium_tier: edit?.initial.premium_tier ?? null,
     };
   }
@@ -731,6 +741,25 @@ export default function CreateForm({
                   >
                     {tr("create.photo_remove")}
                   </button>
+                  <div
+                    className="choices"
+                    role="group"
+                    aria-label={tr("create.photo_style_label")}
+                    style={{ marginTop: "0.5rem" }}
+                  >
+                    {(["hero", "bg"] as const).map((stl) => (
+                      <button
+                        type="button"
+                        key={stl}
+                        className="choice"
+                        aria-pressed={photoStyle === stl}
+                        onClick={() => setPhotoStyle(stl)}
+                      >
+                        {tr(stl === "hero" ? "create.photo_style_hero" : "create.photo_style_bg")}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="hint">{tr("create.photo_style_hint")}</p>
                 </div>
               ) : (
                 <input

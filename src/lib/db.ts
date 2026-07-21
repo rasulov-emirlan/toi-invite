@@ -174,6 +174,7 @@ function migrateInvites(handle: Database.Database) {
   add("program_json", "TEXT");
   add("money_gifts_json", "TEXT");
   add("photo_id", "TEXT");
+  add("photo_style", "TEXT");
   add("organizer_ref", "TEXT");
   add("created_ref", "TEXT");
   add("premium_tier", "TEXT");
@@ -194,12 +195,12 @@ export function createInvite(
       (slug, organizer_token, event_type, template, locale, honoree, partner,
        event_date, event_time, venue_name, venue_map_url, greeting,
        greeting_ru, greeting_ky, host_phone, landmark, rsvp_deadline,
-       dress_code, program_json, money_gifts_json, photo_id, organizer_ref, created_ref)
+       dress_code, program_json, money_gifts_json, photo_id, photo_style, organizer_ref, created_ref)
     VALUES
       (@slug, @organizer_token, @event_type, @template, @locale, @honoree, @partner,
        @event_date, @event_time, @venue_name, @venue_map_url, @greeting,
        @greeting_ru, @greeting_ky, @host_phone, @landmark, @rsvp_deadline,
-       @dress_code, @program_json, @money_gifts_json, @photo_id, @organizer_ref, @created_ref)
+       @dress_code, @program_json, @money_gifts_json, @photo_id, @photo_style, @organizer_ref, @created_ref)
   `);
 
   // Retry on the (astronomically unlikely) slug collision.
@@ -228,6 +229,7 @@ export function createInvite(
         program_json: clean.program_json,
         money_gifts_json: clean.money_gifts_json,
         photo_id: clean.photo_id,
+        photo_style: clean.photo_style,
         organizer_ref: organizerRef,
         created_ref: clean.created_ref,
       });
@@ -255,7 +257,7 @@ export function updateInvite(slug: string, clean: CleanInvite): boolean {
            host_phone = @host_phone, landmark = @landmark,
            rsvp_deadline = @rsvp_deadline, dress_code = @dress_code,
            program_json = @program_json, money_gifts_json = @money_gifts_json,
-           photo_id = @photo_id
+           photo_id = @photo_id, photo_style = @photo_style
        WHERE slug = @slug`,
     )
     .run({ slug, ...editable });

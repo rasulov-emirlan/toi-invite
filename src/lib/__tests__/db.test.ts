@@ -13,7 +13,7 @@ const invite: CleanInvite = {
   event_type: "wedding", template: "gold", locale: "ru", honoree: "Айбек", partner: "Нургүл",
   event_date: "2026-09-20", event_time: "18:00", venue_name: "Ала-Тоо", venue_map_url: null,
   greeting: "Будем рады видеть вас", greeting_ru: null, greeting_ky: null, host_phone: null,
-  landmark: null, rsvp_deadline: null, dress_code: null, program_json: null, money_gifts_json: null, photo_id: null, created_ref: null,
+  landmark: null, rsvp_deadline: null, dress_code: null, program_json: null, money_gifts_json: null, photo_id: null, photo_style: null, created_ref: null,
 };
 
 beforeAll(async () => {
@@ -50,6 +50,13 @@ describe("db", () => {
     expect(api.getInvite(created.slug)?.money_gifts_json).toBe(next);
     expect(api.updateInvite(created.slug, { ...invite, money_gifts_json: null })).toBe(true);
     expect(api.getInvite(created.slug)?.money_gifts_json).toBeNull();
+  });
+
+  it("persists the photo composition style through create and update", () => {
+    const created = api.createInvite({ ...invite, photo_id: "abc123def45600000000", photo_style: "bg" });
+    expect(api.getInvite(created.slug)?.photo_style).toBe("bg");
+    expect(api.updateInvite(created.slug, { ...invite, photo_id: "abc123def45600000000", photo_style: null })).toBe(true);
+    expect(api.getInvite(created.slug)?.photo_style).toBeNull();
   });
 
   it("inserts and updates one RSVP per guest_ref", () => {

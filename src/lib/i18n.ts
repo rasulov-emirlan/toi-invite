@@ -272,6 +272,11 @@ const strings = {
     "create.photo_uploading": "Загружаем фото…",
     "create.photo_remove": "Убрать фото",
     "create.photo_error": "Не удалось загрузить фото. Файл до 5 МБ, JPG/PNG/WebP.",
+    "create.photo_style_label": "Фото на открытке",
+    "create.photo_style_hero": "Сверху",
+    "create.photo_style_bg": "Фоном",
+    "create.photo_style_hint":
+      "«Сверху» — фото полосой над текстом. «Фоном» — открытка целиком на вашем фото.",
 
     "invite.landmark": "Ориентир",
     "invite.dress_code": "Дресс-код",
@@ -562,6 +567,11 @@ const strings = {
     "create.photo_uploading": "Сүрөт жүктөлүүдө…",
     "create.photo_remove": "Сүрөттү алып салуу",
     "create.photo_error": "Сүрөт жүктөлбөй калды. Файл 5 МБга чейин, JPG/PNG/WebP.",
+    "create.photo_style_label": "Открыткадагы сүрөт",
+    "create.photo_style_hero": "Үстүндө",
+    "create.photo_style_bg": "Фон катары",
+    "create.photo_style_hint":
+      "«Үстүндө» — сүрөт тексттин үстүндө тилке болот. «Фон катары» — бүт открытка сиздин сүрөттө.",
 
     "invite.landmark": "Багыт-белги",
     "invite.dress_code": "Дресс-код",
