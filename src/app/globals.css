@@ -736,19 +736,34 @@ select:focus-visible {
   overflow: hidden;
 }
 
+/* The template art is a FRAME — an ornamental border around an empty middle.
+   `cover` cropped it to two thin bands top and bottom, which is why the best
+   asset in the product was nearly invisible. Stretching it to the box is the
+   correct treatment for a border: the ornament runs all the way round the
+   names, which is what a toi invitation looks like. */
 .invite__hero {
   position: relative;
-  padding: 3.5rem 1.5rem 2.5rem;
+  padding: 4.5rem 2.25rem 3.5rem;
   text-align: center;
-  background-size: cover;
+  /* Past 100% so the photographed paper edge some plates carry is trimmed
+     rather than framed; every ornament sits well inside that margin. */
+  background-size: 112% 112%;
+  background-repeat: no-repeat;
   background-position: center;
 }
 
+/* Only enough veil to keep the names readable over the busiest ornament —
+   the old flat 55% white wash bleached the art out entirely. */
 .invite__hero::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), var(--tsurface));
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 45%,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 255, 255, 0.5) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .invite__hero > * {
