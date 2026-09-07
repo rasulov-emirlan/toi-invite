@@ -580,11 +580,15 @@ export default function CreateForm({
                 aria-pressed={template === tpl.key}
                 onClick={() => setTemplate(tpl.key)}
               >
+                {/* The plates are frames, so `cover` cropped all six to a
+                    near-identical strip of border. Showing the whole frame is
+                    what makes them tellable apart at a glance. */}
                 <span className="swatch">
                   <span
                     style={{
-                      backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0)), url(${tpl.heroImage})`,
-                      backgroundSize: "cover",
+                      backgroundImage: `url(${tpl.heroImage})`,
+                      backgroundSize: "112% 112%",
+                      backgroundRepeat: "no-repeat",
                       backgroundPosition: "center",
                     }}
                   />
