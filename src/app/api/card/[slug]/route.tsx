@@ -19,6 +19,7 @@ import {
   tryAcquireRenderSlot,
 } from "@/lib/render-shared";
 import type { Locale } from "@/lib/types";
+import { entitlementsFor } from "@/lib/premium";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,10 +49,11 @@ export async function GET(
   const url = new URL(req.url);
   const formatParam = url.searchParams.get("format") ?? "story";
   if (!isCardFormat(formatParam)) return new Response("bad format", { status: 400 });
+  const ent = entitlementsFor(invite.premium_tier);
   // The story card is free — watermarked, forwarded through WhatsApp, and the
   // best advertising this product has. The 300dpi print file is the one that
-  // goes to a printer alongside real money, so it belongs to the paid tier.
-  if (formatParam === "print" && !invite.premium_tier) {
+  // goes to a printer alongside real money, so it belongs to a paid tier.
+  if (formatParam === "print" && !ent.printExport) {
     return new Response("premium required", { status: 402 });
   }
   const langParam = url.searchParams.get("lang");
@@ -63,8 +65,8 @@ export async function GET(
   const when = `${formatEventDate(invite.event_date, locale)} · ${invite.event_time}`;
   const venueName = invite.venue_name;
   const landmark = invite.landmark;
-  // Paid tiers bought «Без надписи Той-Invite» — the download honors it too.
-  const watermark = !invite.premium_tier;
+  // Paid tiers bought clean files — the download honors it too.
+  const watermark = !ent.cleanMedia;
   // Captured as consts: narrowing doesn't reach the hoisted render() closure.
   const photoId = invite.photo_id;
   const photoStyle = invite.photo_style;

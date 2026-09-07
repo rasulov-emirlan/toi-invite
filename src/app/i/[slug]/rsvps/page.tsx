@@ -4,6 +4,7 @@ import { requireOrganizer } from "@/lib/organizer";
 import Forbidden from "@/components/Forbidden";
 import { translator } from "@/lib/i18n";
 import { computeRsvpStats } from "@/lib/stats";
+import { entitlementsFor } from "@/lib/premium";
 import { displayNames, eventLabel } from "@/lib/invite-view";
 import { formatKgTimestamp } from "@/lib/calendar";
 import type { Locale } from "@/lib/types";
@@ -30,6 +31,7 @@ export default async function RsvpsPage({
 
   if (!invite) return <Forbidden message={tr("rsvps.forbidden")} withHomeLink />;
 
+  const ent = entitlementsFor(invite.premium_tier);
   const rows = listRsvps(slug);
   const stats = computeRsvpStats(rows);
 
@@ -59,7 +61,7 @@ export default async function RsvpsPage({
           slug={slug}
           token={token as string}
           locale={locale}
-          premium={invite.premium_tier !== null}
+          canPrint={ent.printExport}
         />
 
         <div className="statgrid">
@@ -142,7 +144,7 @@ export default async function RsvpsPage({
           token={token as string}
           locale={locale}
           initial={listGuestBoard(slug)}
-          premium={invite.premium_tier !== null}
+          canDirectSend={ent.directSend}
         />
       </main>
       <footer className="footer">

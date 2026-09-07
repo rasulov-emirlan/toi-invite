@@ -64,23 +64,31 @@ docker compose up -d --build
 
 ## Premium
 
-`/premium` shows three tiers: free · **Премиум 990 сом** · Под ключ 1990 сом.
-(A fourth, «Про», stays in `PREMIUM_TIERS` but `hidden` until the features it
-promises exist — see `src/lib/premium.ts`.)
+`/premium` shows the ladder: free · **Медиа-пакет 490** · **Той под контролем
+990** · Под ключ 1990. Each rung adds something concrete, and a rung never
+takes an entitlement away (there is a test for that).
 
-The split is what the free tier gives away vs what the paid tier is *for*:
-
-| | Free | Премиум |
-|---|---|---|
-| Invite site, 6 designs, RSVP, guest board | ✓ | ✓ |
-| Story card + video invite (watermarked) | ✓ | clean |
-| Gift list, money-gift requisites, CSV for the тамада | ✓ | ✓ |
-| **One-tap personal WhatsApp to each guest** (`wa.me/<number>`) | — | ✓ |
-| **A5 300dpi print file** | — | ✓ |
-| No «Той-Invite» wordmark | — | ✓ |
+| | Free | Медиа 490 | Контроль 990 | Под ключ 1990 |
+|---|---|---|---|---|
+| Invite site, 6 designs, RSVP, guest board | ✓ | ✓ | ✓ | ✓ |
+| Story card + video invite | watermarked | **clean** | clean | clean |
+| Gift list, money requisites, CSV for the тамада | ✓ | ✓ | ✓ | ✓ |
+| **A5 300dpi print file** | — | **✓** | ✓ | ✓ |
+| No «Той-Invite» wordmark on the invite | — | — | **✓** | ✓ |
+| **One-tap personal WhatsApp per guest** (`wa.me/<number>`) | — | — | **✓** | ✓ |
+| We fill it in for you over WhatsApp | — | — | — | **✓** |
 
 The free tier is the distribution engine — the watermarked story card and video
-are what get forwarded. The paid tier is the labour saver for a 150-guest toi.
+are what get forwarded, and the watermark is the advertising. 490 buys the
+finished files (the price band KG families are seen asking on lalafo for a
+custom digital invitation). 990 buys back the evening an organizer would spend
+finding 150 people in their contacts.
+
+The ladder lives in `entitlements` on each tier, resolved through
+`entitlementsFor(invite.premium_tier)` — total over null, legacy and malformed
+values, because a render path deciding whether to draw a watermark must never
+throw. Do not reintroduce `invite.premium_tier !== null` checks: that predicate
+can only express one rung.
 
 **Taking money.** Finik acquiring is wired (`POST /api/pay` → checkout →
 signed webhook → `setInvitePremium`) but needs a real domain + our RSA public

@@ -26,14 +26,15 @@ export default function GuestBoard({
   token,
   locale,
   initial,
-  premium,
+  canDirectSend,
 }: {
   slug: string;
   token: string;
   locale: Locale;
   initial: GuestBoardRow[];
-  /** Whether this invite has a paid tier active. */
-  premium: boolean;
+  /** `directSend` entitlement — one-tap `wa.me/<number>` instead of the
+   *  contact picker. */
+  canDirectSend: boolean;
 }) {
   const tr = translator(locale);
   const [rows, setRows] = useState<GuestBoardRow[]>(initial);
@@ -188,7 +189,7 @@ export default function GuestBoard({
         </div>
       )}
 
-      {!premium && rows.some((g) => g.phone) && (
+      {!canDirectSend && rows.some((g) => g.phone) && (
         <p className="board-upsell">
           {tr("rsvps.board_upsell")}{" "}
           <a href={`/premium?lang=${locale}&slug=${slug}`}>
@@ -209,7 +210,7 @@ export default function GuestBoard({
             const answered = g.attendance !== null;
             const message = answered ? tr("create.share_text") : tr("rsvps.remind_text");
             // A number alone isn't enough — the one-tap send is the paid part.
-            const direct = premium && !!g.phone;
+            const direct = canDirectSend && !!g.phone;
             return (
               <li key={g.id} className="guestcard">
                 <div className="guestcard__head">

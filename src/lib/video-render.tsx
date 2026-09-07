@@ -23,6 +23,7 @@ import {
   type SceneKind,
 } from "./video-plan";
 import type { InviteRecord, Locale } from "./types";
+import { entitlementsFor } from "./premium";
 
 /**
  * Rendering half of the video-invite generator: satori scene stills → ffmpeg
@@ -59,7 +60,7 @@ function cacheKeyFor(invite: InviteRecord, locale: Locale): string {
     invite.landmark,
     greetingFor(invite, locale),
     invite.photo_id,
-    invite.premium_tier ? "clean" : "wm",
+    entitlementsFor(invite.premium_tier).cleanMedia ? "clean" : "wm",
   ]);
 }
 
@@ -538,7 +539,7 @@ function greetingScene(ctx: SceneContext): React.ReactElement {
 
 function ctaScene(ctx: SceneContext): React.ReactElement {
   const { invite, tpl, tr, qr, shortUrl } = ctx;
-  const watermark = !invite.premium_tier;
+  const watermark = !entitlementsFor(invite.premium_tier).cleanMedia;
   return frame(tpl, [
     <div
       key="qr"

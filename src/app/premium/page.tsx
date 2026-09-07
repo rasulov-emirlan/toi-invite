@@ -13,9 +13,9 @@ import PremiumOrder from "./PremiumOrder";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Премиум · Той-Invite",
+  title: "Тарифы · Той-Invite",
   description:
-    "Приглашение без надписи «Той-Invite», личная помощь в WhatsApp и именные ссылки для гостей. Оплата в сомах через Finik.",
+    "490 сом — приглашение, видео и открытка без водяного знака плюс A5 для типографии. 990 сом — личное сообщение каждому гостю в WhatsApp в один тап. Оплата в сомах.",
 };
 
 export default async function PremiumPage({

@@ -13,14 +13,14 @@ export default function ShareBar({
   slug,
   token,
   locale,
-  premium,
+  canPrint,
 }: {
   slug: string;
   token: string;
   locale: Locale;
-  /** Whether this invite has a paid tier active — decides whether the 300dpi
-   *  print file downloads or sends the organizer to the pricing page. */
-  premium: boolean;
+  /** `printExport` entitlement — decides whether the 300dpi file downloads or
+   *  the button sends the organizer to the pricing page. */
+  canPrint: boolean;
 }) {
   const tr = translator(locale);
   const [origin, setOrigin] = useState("");
@@ -108,7 +108,7 @@ export default function ShareBar({
         <a className="btn btn--ghost" href={`/api/card/${slug}?format=story`} download>
           {tr("create.download_story")} ↓
         </a>
-        {premium ? (
+        {canPrint ? (
           <a className="btn btn--ghost" href={`/api/card/${slug}?format=print`} download>
             {tr("create.download_print")} ↓
           </a>

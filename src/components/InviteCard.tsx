@@ -2,6 +2,7 @@ import Link from "next/link";
 import { telegramShareUrl, whatsappShareUrl } from "@/lib/share";
 import { translator } from "@/lib/i18n";
 import { getTemplate } from "@/lib/templates";
+import { entitlementsFor } from "@/lib/premium";
 import { eventInstant, googleCalendarUrl, rsvpClosed } from "@/lib/calendar";
 import {
   displayNames,
@@ -283,7 +284,7 @@ export default function InviteCard({
             no working links; live/demo invite links back to the builder with
             attribution so guest→create conversion is measurable. Paid tiers
             bought «Без надписи Той-Invite» — honor it. */}
-        {!invite.premium_tier && (
+        {!entitlementsFor(invite.premium_tier).cleanSite && (
         <div className="invite__madewith">
           {mode === "preview" ? (
             <span>{tr("invite.made_with")}</span>
