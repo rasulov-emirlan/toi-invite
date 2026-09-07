@@ -33,6 +33,7 @@ export default async function ActivatePage({
   }
 
   const invites = listRecentInvites();
+  // Hidden tiers stay grantable: the operator may have sold one by hand.
   const tiers = PREMIUM_TIERS.filter((t) => t.orderable).map((t) => ({
     key: t.key,
     label: `${t.names.ru} · ${t.priceSom} сом`,

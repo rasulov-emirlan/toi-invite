@@ -55,7 +55,12 @@ export default async function RsvpsPage({
           </p>
         </div>
 
-        <ShareBar slug={slug} token={token as string} locale={locale} />
+        <ShareBar
+          slug={slug}
+          token={token as string}
+          locale={locale}
+          premium={invite.premium_tier !== null}
+        />
 
         <div className="statgrid">
           <div className="stat">

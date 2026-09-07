@@ -21,6 +21,10 @@ export interface PremiumTier {
   payable: boolean;
   /** Highlighted as the recommended tier. */
   popular: boolean;
+  /** Kept in the config but not shown: a tier whose promises the product
+   *  doesn't keep yet sells worse than a shorter menu, and deleting the key
+   *  outright would break `getTier` for any row that already stores it. */
+  hidden?: boolean;
   names: Record<Locale, string>;
   tagline: Record<Locale, string>;
   /** Feature bullets, per locale. Equal length across locales (enforced by test). */
@@ -38,22 +42,22 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     tagline: { ru: "Всё для одного тоя", ky: "Бир той үчүн баары" },
     features: {
       ru: [
-        "1 приглашение",
-        "6 дизайнов: классика и кыргызский оймо",
+        "Сайт-приглашение и 6 дизайнов",
         "Учёт гостей и пожелания (RSVP)",
         "Именные ссылки для каждого гостя",
-        "Открытка-картинка для WhatsApp и печати (с QR)",
+        "Открытка для WhatsApp (с QR)",
+        "Видео-приглашение для WhatsApp",
+        "Список подарков и реквизиты для поздравлений",
         "Экспорт списка для тамады (CSV)",
-        "Ссылка красиво раскрывается в WhatsApp",
       ],
       ky: [
-        "1 чакыруу",
-        "6 дизайн: классика жана кыргыз оймосу",
+        "Чакыруу-сайт жана 6 дизайн",
         "Меймандарды эсептөө жана каалоо-тилектер (RSVP)",
         "Ар бир мейманга аты жазылган шилтеме",
-        "WhatsApp жана басып чыгаруу үчүн открытка (QR менен)",
+        "WhatsApp үчүн открытка (QR менен)",
+        "WhatsApp үчүн видео-чакыруу",
+        "Белектер тизмеси жана куттуктоо реквизиттери",
         "Тамада үчүн тизме экспорту (CSV)",
-        "Шилтеме WhatsApp'та кооз ачылат",
       ],
     },
   },
@@ -65,32 +69,38 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     popular: true,
     names: { ru: "Премиум", ky: "Премиум" },
     tagline: {
-      ru: "Для тех, кто хочет вау-эффект",
-      ky: "Вау-эффект каалагандар үчүн",
+      ru: "Когда гостей больше сотни",
+      ky: "Меймандар жүздөн ашканда",
     },
     features: {
       ru: [
         "Всё из бесплатного",
+        "Каждому гостю — личное сообщение в WhatsApp в один тап",
+        "Файл для типографии: A5, 300 dpi, без водяного знака",
+        "Видео-приглашение без водяного знака",
         "Без надписи «Той-Invite» — на сайте и на открытке",
-        "Открытка для печати без водяного знака",
         "Приоритетная помощь в WhatsApp",
-        "Ранний доступ к новым дизайнам",
       ],
       ky: [
         "Акысыздын баары",
+        "Ар бир мейманга WhatsApp'та бир басууда жеке кабар",
+        "Басмакана үчүн файл: A5, 300 dpi, суу белгисиз",
+        "Суу белгисиз видео-чакыруу",
         "«Той-Invite» жазуусуз — сайтта да, открыткада да",
-        "Басып чыгарууга суу белгисиз открытка",
         "WhatsApp'та биринчи кезекте жардам",
-        "Жаңы дизайндарга эрте жетки",
       ],
     },
   },
   {
+    // Every bullet here is unbuilt (photo album, multi-event, own branding).
+    // Hidden until they ship: an unbuyable middle tier only makes the real one
+    // look arbitrary. Unhide when the features exist.
     key: "pro",
     priceSom: 1490,
     orderable: true,
     payable: false,
     popular: false,
+    hidden: true,
     names: { ru: "Про", ky: "Про" },
     tagline: {
       ru: "Для тамады и больших тоев",
@@ -126,13 +136,13 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     },
     features: {
       ru: [
-        "Всё из Про",
+        "Всё из Премиум",
         "Заполним и оформим за вас",
         "Готово в течение 2 часов",
         "Правки до самого тоя",
       ],
       ky: [
-        "Пронун баары",
+        "Премиумдун баары",
         "Баарын өзүбүз толтуруп, кооздойбуз",
         "2 сааттын ичинде даяр",
         "Тойго чейин оңдоолор",
@@ -151,6 +161,9 @@ export function getTier(key: PremiumTierKey): PremiumTier {
   if (!cfg) throw new Error(`unknown premium tier: ${key}`);
   return cfg;
 }
+
+/** The tiers a visitor should actually see. */
+export const VISIBLE_TIERS: PremiumTier[] = PREMIUM_TIERS.filter((t) => !t.hidden);
 
 export function isOrderableTier(v: unknown): v is PremiumTierKey {
   return typeof v === "string" && ORDERABLE.has(v as PremiumTierKey);

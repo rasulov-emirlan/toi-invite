@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PREMIUM_TIERS,
+  VISIBLE_TIERS,
   PREMIUM_LIMITS,
   formatSom,
   getTier,
@@ -168,5 +169,23 @@ describe("validatePremiumInterest", () => {
       expect(res.errors).toContain("locale");
       expect(res.errors).toContain("comment");
     }
+  });
+});
+
+describe("VISIBLE_TIERS", () => {
+  it("hides tiers whose promises the product doesn't keep yet", () => {
+    expect(VISIBLE_TIERS.map((t) => t.key)).not.toContain("pro");
+  });
+
+  it("still shows exactly one recommended tier", () => {
+    expect(VISIBLE_TIERS.filter((t) => t.popular)).toHaveLength(1);
+  });
+
+  it("keeps every hidden tier resolvable, so stored rows never throw", () => {
+    for (const t of PREMIUM_TIERS) expect(getTier(t.key).key).toBe(t.key);
+  });
+
+  it("never shows a payable tier that is hidden", () => {
+    for (const t of PREMIUM_TIERS) if (t.hidden) expect(t.payable).toBe(false);
   });
 });

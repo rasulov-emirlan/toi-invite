@@ -1068,8 +1068,11 @@ function SuccessPanel({
           <a className="btn btn--ghost" href={`/api/card/${result.slug}?format=story`} download>
             {tr("create.download_story")} ↓
           </a>
-          <a className="btn btn--ghost" href={`/api/card/${result.slug}?format=print`} download>
-            {tr("create.download_print")} ↓
+          {/* A just-created invite is always on the free tier, so this is the
+              upsell rather than a download — named at the moment the organizer
+              is thinking about printing. */}
+          <a className="btn btn--ghost" href={`/premium?lang=${locale}&slug=${result.slug}`}>
+            {tr("create.download_print")} ✦
           </a>
         </div>
         <p className="hint" style={{ marginTop: "0.5rem" }}>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { PREMIUM_TIERS, formatSom, getTier } from "@/lib/premium";
+import { VISIBLE_TIERS, formatSom, getTier } from "@/lib/premium";
 import { translator } from "@/lib/i18n";
 import type { Locale, PremiumTierKey } from "@/lib/types";
 
@@ -70,7 +70,7 @@ export default function PremiumOrder({
   return (
     <>
       <div className="tiers">
-        {PREMIUM_TIERS.map((tier) => (
+        {VISIBLE_TIERS.map((tier) => (
           <div
             key={tier.key}
             className={`tier${tier.popular ? " tier--popular" : ""}`}
