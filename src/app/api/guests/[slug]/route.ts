@@ -4,7 +4,9 @@ import {
   deleteInvitedGuest,
   getInvite,
   listGuestBoard,
+  setInvitedGuestPhone,
 } from "@/lib/db";
+import { normalizeKgPhone, parseGuestLine } from "@/lib/phone";
 import { isValidSlug } from "@/lib/slug";
 import { LIMITS } from "@/lib/validation";
 import { tokensMatch } from "@/lib/token";
@@ -19,6 +21,7 @@ interface Body {
   name?: string;
   names?: unknown;
   id?: number;
+  phone?: unknown;
 }
 
 /** One pasted list = one request = one rate-limit token (bounded per call;
@@ -79,14 +82,36 @@ export async function POST(
     if (names.length !== raw.length || names.some((n) => n.length > LIMITS.guestName)) {
       return NextResponse.json({ error: "validation", fields: ["name"] }, { status: 400 });
     }
+    // Each line may carry the guest's number after their name — that is how
+    // organizers already keep the list, and it is what turns a reminder from
+    // "find them in your contacts" into one tap.
+    const guests = names.map(parseGuestLine);
     // Inserted in order — `added` tells the client exactly which tail was
     // dropped for capacity, so nothing is lost silently.
-    const added = addInvitedGuests(slug, names);
+    const added = addInvitedGuests(slug, guests);
     if (added === 0) return NextResponse.json({ error: "list full" }, { status: 409 });
     return NextResponse.json(
       { ok: true, added, guests: listGuestBoard(slug) },
       { status: 201 },
     );
+  }
+
+  if (body.op === "phone") {
+    const id = Number(body.id);
+    if (!Number.isInteger(id) || id < 1) {
+      return NextResponse.json({ error: "validation", fields: ["id"] }, { status: 400 });
+    }
+    const raw = typeof body.phone === "string" ? body.phone.trim() : "";
+    // Empty clears the number; anything non-empty must actually be a KG one,
+    // so a typo surfaces here instead of as a message to a stranger.
+    const phone = raw === "" ? null : normalizeKgPhone(raw);
+    if (raw !== "" && phone === null) {
+      return NextResponse.json({ error: "validation", fields: ["phone"] }, { status: 400 });
+    }
+    if (!setInvitedGuestPhone(slug, id, phone)) {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, guests: listGuestBoard(slug) });
   }
 
   if (body.op === "remove") {

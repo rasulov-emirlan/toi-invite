@@ -1,4 +1,5 @@
 import { isLocale } from "./i18n";
+import { normalizeKgPhone } from "./phone";
 import type { ValidationResult } from "./validation";
 import type { Locale, PremiumInterestInput, PremiumTierKey } from "./types";
 
@@ -179,16 +180,6 @@ function str(v: unknown): string {
  * (no KG operator/area code begins with 0 or 1), which rejects obvious junk
  * like `000000000` without rejecting any real number.
  */
-export function normalizeKgPhone(raw: string): string | null {
-  const digits = raw.replace(/\D+/g, "");
-  let national: string;
-  if (digits.length === 12 && digits.startsWith("996")) national = digits.slice(3);
-  else if (digits.length === 10 && digits.startsWith("0")) national = digits.slice(1);
-  else if (digits.length === 9) national = digits;
-  else return null;
-  if (!/^[2-9]\d{8}$/.test(national)) return null;
-  return `+996${national}`;
-}
 
 export interface CleanPremiumInterest {
   tier: PremiumTierKey;
@@ -237,3 +228,6 @@ export function validatePremiumInterest(
     },
   };
 }
+
+// Re-exported so the premium surfaces keep one import for "a KG phone number".
+export { normalizeKgPhone };

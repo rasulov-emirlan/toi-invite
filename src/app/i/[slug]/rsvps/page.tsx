@@ -137,6 +137,7 @@ export default async function RsvpsPage({
           token={token as string}
           locale={locale}
           initial={listGuestBoard(slug)}
+          premium={invite.premium_tier !== null}
         />
       </main>
       <footer className="footer">

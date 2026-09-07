@@ -16,3 +16,14 @@ export function telegramShareUrl(message: string, url: string): string {
   const base = `https://t.me/share/url?url=${encodeURIComponent(url)}`;
   return message.trim() ? `${base}&text=${encodeURIComponent(message.trim())}` : base;
 }
+
+/**
+ * A WhatsApp link that opens the chat with ONE specific person, message
+ * pre-filled — no contact picker. For a 150-guest toi this is the difference
+ * between an evening of copy-paste and a few minutes of tapping, which is why
+ * it sits behind the paid tier.
+ */
+export function whatsappDirectUrl(digits: string, message: string, url: string): string {
+  const text = message.trim() ? `${message.trim()} ${url}` : url;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}

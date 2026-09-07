@@ -491,6 +491,11 @@ function migrateInvitedGuests(handle: Database.Database) {
     const set = handle.prepare("UPDATE invited_guests SET token = ? WHERE id = ?");
     for (const r of rows) set.run(generateSlug(GUEST_TOKEN_LENGTH), r.id);
   }
+  if (!cols.has("phone")) {
+    // Optional: an organizer who only has a name still gets a personal link,
+    // just not the one-tap send.
+    handle.exec("ALTER TABLE invited_guests ADD COLUMN phone TEXT");
+  }
   handle.exec(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_invited_guests_token
      ON invited_guests(invite_slug, token)`,
@@ -499,7 +504,13 @@ function migrateInvitedGuests(handle: Database.Database) {
 
 /** Organizer pastes a whole list: insert atomically, stopping at the cap.
  *  Returns how many were added (0 when the invite is missing or full). */
-export function addInvitedGuests(slug: string, names: string[]): number {
+export interface NewInvitedGuest {
+  name: string;
+  /** E.164, or null when the organizer only pasted a name. */
+  phone: string | null;
+}
+
+export function addInvitedGuests(slug: string, guests: NewInvitedGuest[]): number {
   const conn = db();
   const insert = conn.transaction((): number => {
     const exists = prep("SELECT 1 FROM invites WHERE slug = ?").get(slug);
@@ -508,17 +519,31 @@ export function addInvitedGuests(slug: string, names: string[]): number {
       slug,
     ) as { c: number };
     const room = Math.max(0, MAX_INVITED_PER_INVITE - c);
-    const toAdd = names.slice(0, room);
-    for (const name of toAdd) {
-      prep("INSERT INTO invited_guests (invite_slug, token, name) VALUES (?, ?, ?)").run(
-        slug,
-        generateSlug(GUEST_TOKEN_LENGTH),
-        name,
-      );
+    const toAdd = guests.slice(0, room);
+    for (const guest of toAdd) {
+      prep(
+        "INSERT INTO invited_guests (invite_slug, token, name, phone) VALUES (?, ?, ?, ?)",
+      ).run(slug, generateSlug(GUEST_TOKEN_LENGTH), guest.name, guest.phone);
     }
     return toAdd.length;
   });
   return insert();
+}
+
+/** Attach or clear a guest's number after the fact. Scoped to the invite so an
+ *  organizer token can only ever touch its own list. */
+export function setInvitedGuestPhone(
+  slug: string,
+  id: number,
+  phone: string | null,
+): boolean {
+  return (
+    prep("UPDATE invited_guests SET phone = ? WHERE invite_slug = ? AND id = ?").run(
+      phone,
+      slug,
+      id,
+    ).changes > 0
+  );
 }
 
 /** Organizer adds a guest to the list. Returns the new id, or null when the
@@ -575,6 +600,7 @@ export interface GuestBoardRow {
   id: number;
   token: string;
   name: string;
+  phone: string | null;
   opened_at: string | null;
   attendance: Attendance | null;
   guests_count: number | null;
@@ -588,7 +614,7 @@ export interface GuestBoardRow {
  */
 export function listGuestBoard(slug: string): GuestBoardRow[] {
   return prep(
-      `SELECT g.id, g.token, g.name, g.opened_at, r.attendance, r.guests_count
+      `SELECT g.id, g.token, g.name, g.phone, g.opened_at, r.attendance, r.guests_count
        FROM invited_guests g
        LEFT JOIN rsvps r ON r.id = (
          SELECT id FROM rsvps
@@ -692,6 +718,25 @@ export function recordPaymentNote(id: string, note: string): void {
     `UPDATE payments SET webhook_json = ?, updated_at = datetime('now')
      WHERE id = ? AND status = 'pending'`,
   ).run(note, id);
+}
+
+export interface RecentInvite {
+  slug: string;
+  honoree: string;
+  partner: string | null;
+  event_date: string;
+  created_at: string;
+  premium_tier: string | null;
+}
+
+/** Newest invites, for the operator's manual-activation view. */
+export function listRecentInvites(limit = 40): RecentInvite[] {
+  return db()
+    .prepare(
+      `SELECT slug, honoree, partner, event_date, created_at, premium_tier
+         FROM invites ORDER BY created_at DESC, slug DESC LIMIT ?`,
+    )
+    .all(limit) as RecentInvite[];
 }
 
 /** Activate a paid tier on an invite (branding removal etc). */

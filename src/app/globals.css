@@ -1652,6 +1652,82 @@ table.rsvps th {
 .guestcard__name {
   font-weight: 600;
 }
+/* The guest's number, doubling as the control that sets it — an empty slot
+   reads "+ Номер" so a 150-name list can be filled in one pass down the page. */
+.guestcard__phonebtn {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  border-bottom: 1px dashed var(--gray-300);
+}
+.guestcard__phonebtn:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.guestcard__phone {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.guestcard__phone input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0;
+}
+.guestcard__phone .btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.chiprow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  color: var(--gray-800);
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* Shown only once the organizer has numbers on file — the upsell describes
+   something they can already see the shape of, not an abstraction. */
+.board-upsell {
+  border-left: 3px solid var(--red);
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+  background: var(--gray-100);
+  font-size: 0.9rem;
+  color: var(--gray-800);
+}
+.board-upsell a {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .guestcard__actions {
   display: flex;
   gap: 0.5rem;

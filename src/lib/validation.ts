@@ -1,7 +1,7 @@
 import { isEventType } from "./events";
 import { isTemplate } from "./templates";
 import { isLocale } from "./i18n";
-import { normalizeKgPhone } from "./premium";
+import { normalizeKgPhone } from "./phone";
 import type {
   Attendance,
   EventTypeKey,

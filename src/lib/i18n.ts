@@ -297,7 +297,20 @@ const strings = {
     "rsvps.board_hint":
       "Добавьте имена — каждому готова именная ссылка. Видно, кто открыл приглашение и кто ответил.",
     "rsvps.board_add": "Добавить",
-    "rsvps.board_add_hint": "Можно вставить сразу список — каждое имя с новой строки.",
+    "rsvps.board_add_hint":
+      "Можно вставить сразу список — каждое имя с новой строки. Есть номер — пишите рядом: «Айбек 0555 12 34 56».",
+    "rsvps.board_phone_add": "Номер",
+    "rsvps.board_phone_ph": "0555 12 34 56",
+    "rsvps.board_phone_save": "Сохранить",
+    "rsvps.board_phone_bad": "Это не похоже на кыргызский номер.",
+    "rsvps.board_write": "Написать",
+    "rsvps.board_write_locked": "Написать лично — в Премиуме",
+    "rsvps.board_filter_all": "Все",
+    "rsvps.board_filter_pending": "Без ответа",
+    "rsvps.board_filter_coming": "Придут",
+    "rsvps.board_none_in_filter": "В этой группе никого нет.",
+    "rsvps.board_upsell":
+      "С Премиумом каждому гостю с номером можно написать в WhatsApp в одно касание — без поиска по контактам.",
     "rsvps.board_error": "Не получилось обновить список гостей. Попробуйте ещё раз.",
     "rsvps.board_full": "Лимит — 300 гостей на приглашение. Не добавлено имён: {n} (они остались в поле).",
     "rsvps.board_confirm_remove": "Удалить гостя «{name}»? Его личная ссылка перестанет работать.",
@@ -599,7 +612,20 @@ const strings = {
     "rsvps.board_hint":
       "Ысымдарды кошуңуз — ар бирине аты жазылган шилтеме даяр. Ким ачканы жана ким жооп бергени көрүнөт.",
     "rsvps.board_add": "Кошуу",
-    "rsvps.board_add_hint": "Тизмени бүтүндөй коюп койсоңуз да болот — ар бир ысымды жаңы саптан жазыңыз.",
+    "rsvps.board_add_hint":
+      "Тизмени бүтүндөй коюп койсоңуз да болот — ар бир ысымды жаңы саптан жазыңыз. Номери болсо жанына жазыңыз: «Айбек 0555 12 34 56».",
+    "rsvps.board_phone_add": "Номер",
+    "rsvps.board_phone_ph": "0555 12 34 56",
+    "rsvps.board_phone_save": "Сактоо",
+    "rsvps.board_phone_bad": "Бул кыргыз номерине окшобойт.",
+    "rsvps.board_write": "Жазуу",
+    "rsvps.board_write_locked": "Жеке жазуу — Премиумда",
+    "rsvps.board_filter_all": "Баары",
+    "rsvps.board_filter_pending": "Жоопсуз",
+    "rsvps.board_filter_coming": "Келет",
+    "rsvps.board_none_in_filter": "Бул топто эч ким жок.",
+    "rsvps.board_upsell":
+      "Премиум менен номери бар ар бир мейманга WhatsApp'та бир эле басууда жазсаңыз болот — контакттардан издебей.",
     "rsvps.board_error": "Меймандар тизмесин жаңыртуу оңунан чыккан жок. Кайра аракет кылыңыз.",
     "rsvps.board_full": "Чек — бир чакырууга 300 мейман. Кошулбай калган ысымдар: {n} (талаада калды).",
     "rsvps.board_confirm_remove": "«{name}» меймандын жеке шилтемеси иштебей калат. Өчүрөсүзбү?",
