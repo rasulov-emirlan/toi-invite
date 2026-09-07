@@ -6,6 +6,7 @@ import { createFinikPayment, finikConfigured } from "@/lib/finik";
 import { isValidSlug } from "@/lib/slug";
 import { BASE_URL } from "@/lib/base-url";
 import { clientKey, premiumInterestLimiter } from "@/lib/ratelimit";
+import { sidFromRequest } from "@/lib/session";
 import type { PremiumInterestInput } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
       redirectUrl: `${BASE_URL}/premium/thanks?pid=${viewToken}&lang=${clean.locale}`,
       webhookUrl: `${BASE_URL}/api/finik/webhook`,
     });
-    logEvent("payment_started", slug, clean.tier);
+    logEvent("payment_started", slug, clean.tier, sidFromRequest(req));
     return NextResponse.json({ url }, { status: 201 });
   } catch (err) {
     console.error("finik create payment failed", err);

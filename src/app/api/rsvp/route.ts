@@ -5,6 +5,7 @@ import { addRsvp, getInvite, logEvent } from "@/lib/db";
 import { rsvpClosed } from "@/lib/calendar";
 import { clientIp, rsvpInviteLimiter, rsvpIpLimiter } from "@/lib/ratelimit";
 import type { RsvpInput } from "@/lib/types";
+import { sidFromRequest } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
   try {
     const ok = addRsvp(body.slug, result.value);
     if (!ok) return NextResponse.json({ error: "not found" }, { status: 404 });
-    logEvent("rsvp_submitted", body.slug, result.value.attendance);
+    logEvent("rsvp_submitted", body.slug, result.value.attendance, sidFromRequest(req));
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {
     console.error("addRsvp failed", err);

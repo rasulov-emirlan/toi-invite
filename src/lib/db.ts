@@ -111,10 +111,19 @@ function db(): Database.Database {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_events_name_time ON events(name, created_at);
+    CREATE TABLE IF NOT EXISTS web_vitals (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      metric     TEXT NOT NULL,
+      value      REAL NOT NULL,
+      surface    TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_vitals_metric_time ON web_vitals(metric, created_at);
   `);
   migrateRsvps(handle);
   migrateInvites(handle);
   migrateInvitedGuests(handle);
+  migrateEvents(handle);
   _db = handle;
   return _db;
 }
@@ -181,6 +190,24 @@ function migrateInvites(handle: Database.Database) {
   handle.exec(
     `CREATE INDEX IF NOT EXISTS idx_invites_organizer_ref
      ON invites(organizer_ref) WHERE organizer_ref IS NOT NULL`,
+  );
+}
+
+/**
+ * Events predate the anonymous visitor id. Legacy rows keep NULL and simply
+ * fall out of the distinct-visitor funnel — they still count in the raw
+ * per-name totals.
+ */
+function migrateEvents(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(events)") as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!cols.has("sid")) {
+    handle.exec("ALTER TABLE events ADD COLUMN sid TEXT");
+  }
+  handle.exec(
+    `CREATE INDEX IF NOT EXISTS idx_events_sid_name
+     ON events(sid, name) WHERE sid IS NOT NULL`,
   );
 }
 
@@ -680,19 +707,92 @@ const EVENTS_RETENTION_DAYS = 90;
 let lastEventsPruneMs = 0;
 
 /** Append-only product event. Never throws — analytics must not break a request. */
-export function logEvent(name: string, slug: string | null = null, ref: string | null = null): void {
+export function logEvent(
+  name: string,
+  slug: string | null = null,
+  ref: string | null = null,
+  sid: string | null = null,
+): void {
   try {
     db();
-    prep("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)").run(name, slug, ref);
+    prep("INSERT INTO events (name, slug, ref, sid) VALUES (?, ?, ?, ?)").run(
+      name,
+      slug,
+      ref,
+      sid,
+    );
     const now = Date.now();
     if (now - lastEventsPruneMs > 3600_000) {
       lastEventsPruneMs = now;
       prep("DELETE FROM events WHERE created_at < datetime('now', ?)")
         .run(`-${EVENTS_RETENTION_DAYS} days`);
+      prep("DELETE FROM web_vitals WHERE created_at < datetime('now', ?)")
+        .run(`-${EVENTS_RETENTION_DAYS} days`);
     }
   } catch (err) {
     console.error("logEvent failed", err);
   }
+}
+
+/** A single Core Web Vitals sample. Same never-throw contract as logEvent. */
+export function logWebVital(metric: string, value: number, surface: string): void {
+  try {
+    db();
+    prep("INSERT INTO web_vitals (metric, value, surface) VALUES (?, ?, ?)").run(
+      metric,
+      value,
+      surface,
+    );
+  } catch (err) {
+    console.error("logWebVital failed", err);
+  }
+}
+
+/** Distinct visitors that reached each named step, over the given window. */
+export function funnelCounts(names: readonly string[], days: number): Record<string, number> {
+  const conn = db();
+  const out: Record<string, number> = {};
+  const stmt = conn.prepare(
+    `SELECT COUNT(DISTINCT sid) c FROM events
+     WHERE name = ? AND sid IS NOT NULL AND created_at >= datetime('now', ?)`,
+  );
+  for (const name of names) {
+    out[name] = (stmt.get(name, `-${days} days`) as { c: number }).c;
+  }
+  return out;
+}
+
+export interface VitalSample {
+  metric: string;
+  surface: string;
+  samples: number;
+  /** 75th percentile — the threshold Google's Core Web Vitals are scored at. */
+  p75: number;
+}
+
+/**
+ * p75 per (metric, surface) over the window — the percentile Core Web Vitals
+ * are scored at. SQLite has no percentile function, so this is nearest-rank:
+ * order each group's values and take rank ceil(0.75·n), which the integer
+ * expression (3n+3)/4 computes exactly. Done with window functions so a busy
+ * month of samples is never materialized in JS.
+ */
+export function vitalsP75(days: number): VitalSample[] {
+  return db()
+    .prepare(
+      `WITH ranked AS (
+         SELECT metric, surface, value,
+                ROW_NUMBER() OVER (PARTITION BY metric, surface ORDER BY value) rank,
+                COUNT(*)     OVER (PARTITION BY metric, surface)                n
+           FROM web_vitals
+          WHERE created_at >= datetime('now', ?)
+       )
+       SELECT metric, surface, n AS samples, value AS p75
+         FROM ranked
+        WHERE rank = (n * 3 + 3) / 4
+        ORDER BY metric, surface`,
+    )
+    .all(`-${days} days`) as VitalSample[];
 }
 
 export interface StatsSummary {

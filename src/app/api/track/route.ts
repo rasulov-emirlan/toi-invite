@@ -3,6 +3,7 @@ import { getInvite, logEvent, markInvitedGuestOpened, resolveInvitedGuest } from
 import { isValidSlug } from "@/lib/slug";
 import { GUEST_LINK_TOKEN_RE } from "@/lib/validation";
 import { clientIp, trackLimiter } from "@/lib/ratelimit";
+import { sidFromRequest } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,14 +23,15 @@ export async function POST(req: Request) {
       // Only reference real invites — otherwise the events table becomes an
       // arbitrary-string sink for anyone with curl.
       const slug = slugRaw && getInvite(slugRaw) ? slugRaw : null;
+      const sid = sidFromRequest(req);
       if (TRACKABLE.has(name)) {
-        logEvent(name, slug);
+        logEvent(name, slug, null, sid);
       } else if (name === "guest_open" && slug) {
         // Personal-link "opened" stamp — capability-token gated, idempotent.
         const g = typeof body?.g === "string" && GUEST_LINK_TOKEN_RE.test(body.g) ? body.g : null;
         if (g && resolveInvitedGuest(slug, g) != null) {
           // Only the stamping open counts — re-opens must not inflate the funnel.
-          if (markInvitedGuestOpened(slug, g)) logEvent("guest_opened", slug);
+          if (markInvitedGuestOpened(slug, g)) logEvent("guest_opened", slug, null, sid);
         }
       }
     } catch {

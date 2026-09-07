@@ -156,4 +156,35 @@ describe("payments", () => {
     expect(api.getPayment("99999999-9999-4999-8999-999999999999")).toBeNull();
     expect(api.finalizePayment("99999999-9999-4999-8999-999999999999", "failed", null)).toBeNull();
   });
+
+  it("counts a funnel step by distinct visitor, not by event row", () => {
+    // One person reloading the builder is one person; two people are two.
+    api.logEvent("t_step", null, null, "sid-aaaaaaaaaaaaaaaaaaaa");
+    api.logEvent("t_step", null, null, "sid-aaaaaaaaaaaaaaaaaaaa");
+    api.logEvent("t_step", null, null, "sid-bbbbbbbbbbbbbbbbbbbb");
+    // Events written before the sid column existed must not inflate the count.
+    api.logEvent("t_step");
+    expect(api.funnelCounts(["t_step"], 30).t_step).toBe(2);
+  });
+
+  it("reports zero for a step nobody has reached", () => {
+    expect(api.funnelCounts(["t_never"], 30)).toEqual({ t_never: 0 });
+  });
+
+  it("takes the nearest-rank p75 of each metric and surface", () => {
+    // 1..100 on the landing page: the 75th smallest value is 75.
+    for (let i = 1; i <= 100; i += 1) api.logWebVital("LCP", i, "landing");
+    // A different surface is a different distribution, not the same pool.
+    for (const v of [10, 20, 30, 40]) api.logWebVital("LCP", v, "invite");
+    // A single sample is its own p75.
+    api.logWebVital("CLS", 0.42, "landing");
+
+    const byKey = new Map(
+      api.vitalsP75(30).map((r) => [`${r.metric}:${r.surface}`, r]),
+    );
+    expect(byKey.get("LCP:landing")).toMatchObject({ samples: 100, p75: 75 });
+    // ceil(0.75 * 4) = 3 → the third smallest.
+    expect(byKey.get("LCP:invite")).toMatchObject({ samples: 4, p75: 30 });
+    expect(byKey.get("CLS:landing")).toMatchObject({ samples: 1, p75: 0.42 });
+  });
 });

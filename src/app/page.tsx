@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
 import { listInvitesByOrganizerRef } from "@/lib/db";
+import { logPageView } from "@/lib/pageview";
 import { displayNames, eventLabel } from "@/lib/invite-view";
 import { sampleInvite } from "@/lib/sample-invite";
 import { getTemplate, paletteVars } from "@/lib/templates";
@@ -46,6 +47,9 @@ export default async function Landing({
 
   // Server-side "Мои приглашения": the HttpOnly organizer cookie survives a
   // cleared localStorage, so recovery no longer depends on browser storage.
+  // Top of the funnel — everything downstream is measured as a share of this.
+  await logPageView("landing_view");
+
   const orgRef = (await cookies()).get("toi_org")?.value;
   const serverInvites = orgRef
     ? listInvitesByOrganizerRef(orgRef).map((inv) => ({

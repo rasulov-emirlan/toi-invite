@@ -13,8 +13,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/marck-script": "^5.3.0",
     "better-sqlite3": "^11.8.1",
     "ffmpeg-static": "^5.3.0",
     "next": "^15.3.0",
