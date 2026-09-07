@@ -10,6 +10,7 @@ function row(p: Partial<PremiumInterestRecord>): PremiumInterestRecord {
     phone: "+996 555 123 456",
     locale: "ru",
     comment: "Позвоните вечером",
+    invite_slug: null,
     created_at: "2026-07-07 05:00:00",
     ...p,
   };
@@ -20,7 +21,7 @@ describe("premiumLeadsToCsv", () => {
     const csv = premiumLeadsToCsv([]);
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     expect(csv.slice(1).split("\r\n")[0]).toBe(
-      "created_at,tier,name,phone,locale,comment",
+      "created_at,tier,invite_slug,name,phone,locale,comment",
     );
   });
 
@@ -43,7 +44,12 @@ describe("premiumLeadsToCsv", () => {
 
   it("renders an empty data set with a trailing CRLF", () => {
     expect(premiumLeadsToCsv([])).toBe(
-      "\ufeffcreated_at,tier,name,phone,locale,comment\r\n",
+      "\ufeffcreated_at,tier,invite_slug,name,phone,locale,comment\r\n",
     );
+  });
+
+  it("carries the invite the lead came from, so it can be fulfilled", () => {
+    const csv = premiumLeadsToCsv([row({ invite_slug: "r22e5c6w" })]);
+    expect(csv.split("\r\n")[1].split(",")[2]).toBe("r22e5c6w");
   });
 });

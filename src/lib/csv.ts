@@ -57,11 +57,23 @@ export function rsvpsToCsv(rows: RsvpRecord[], locale: Locale): string {
 
 /** Render premium-interest leads as CSV for the operator. */
 export function premiumLeadsToCsv(rows: PremiumInterestRecord[]): string {
-  const header = ["created_at", "tier", "name", "phone", "locale", "comment"];
+  // invite_slug is what makes a lead fulfillable — it says which invite to
+  // switch on once the transfer arrives.
+  const header = [
+    "created_at", "tier", "invite_slug", "name", "phone", "locale", "comment",
+  ];
   const lines = [header.map(esc).join(",")];
   for (const row of rows) {
     lines.push(
-      [row.created_at, row.tier, row.name, row.phone, row.locale, row.comment ?? ""]
+      [
+        row.created_at,
+        row.tier,
+        row.invite_slug ?? "",
+        row.name,
+        row.phone,
+        row.locale,
+        row.comment ?? "",
+      ]
         .map(esc)
         .join(","),
     );

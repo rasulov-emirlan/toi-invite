@@ -124,6 +124,7 @@ function db(): Database.Database {
   migrateInvites(handle);
   migrateInvitedGuests(handle);
   migrateEvents(handle);
+  migratePremiumInterest(handle);
   _db = handle;
   return _db;
 }
@@ -209,6 +210,22 @@ function migrateEvents(handle: Database.Database) {
     `CREATE INDEX IF NOT EXISTS idx_events_sid_name
      ON events(sid, name) WHERE sid IS NOT NULL`,
   );
+}
+
+/**
+ * A lead is only actionable if you know which invite to switch on. The order
+ * form already sent the slug; it was being dropped on the way to the table,
+ * leaving the operator with a name and a phone number and no way to fulfil.
+ */
+function migratePremiumInterest(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(premium_interest)") as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!cols.has("invite_slug")) {
+    handle.exec("ALTER TABLE premium_interest ADD COLUMN invite_slug TEXT");
+  }
 }
 
 export function createInvite(
@@ -892,15 +909,20 @@ export function listPremiumInterest(): PremiumInterestRecord[] {
     ...r,
     tier: r.tier as PremiumTierKey,
     locale: r.locale as Locale,
+    // Rows written before the column existed read back undefined.
+    invite_slug: r.invite_slug ?? null,
   }));
 }
 
 /** Record a premium-tier interest lead (the payment fake-door). Returns the row id. */
-export function addPremiumInterest(clean: CleanPremiumInterest): number {
+export function addPremiumInterest(
+  clean: CleanPremiumInterest,
+  inviteSlug: string | null = null,
+): number {
   const info = db()
     .prepare(
-      `INSERT INTO premium_interest (tier, name, phone, locale, comment)
-       VALUES (@tier, @name, @phone, @locale, @comment)`,
+      `INSERT INTO premium_interest (tier, name, phone, locale, comment, invite_slug)
+       VALUES (@tier, @name, @phone, @locale, @comment, @invite_slug)`,
     )
     .run({
       tier: clean.tier,
@@ -908,6 +930,7 @@ export function addPremiumInterest(clean: CleanPremiumInterest): number {
       phone: clean.phone,
       locale: clean.locale,
       comment: clean.comment,
+      invite_slug: inviteSlug,
     });
   return Number(info.lastInsertRowid);
 }

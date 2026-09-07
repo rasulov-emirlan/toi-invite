@@ -203,16 +203,6 @@ export default function InviteCard({
 
         {mode !== "preview" && <Countdown targetMs={start.getTime()} locale={locale} />}
 
-        {giftsSlot}
-
-        {moneyGifts.length > 0 && (
-          <MoneyGifts
-            items={moneyGifts}
-            locale={locale}
-            interactive={mode !== "preview"}
-          />
-        )}
-
         {invite.rsvp_deadline && !closed && (
           <p className="rsvp-deadline">
             {tr("invite.rsvp_deadline").replace(
@@ -241,6 +231,20 @@ export default function InviteCard({
             />
             <RsvpJump label={tr("invite.rsvp_jump")} />
           </>
+        )}
+
+        {/* Gifts and bank requisites come AFTER the answer. Asking a guest for
+            money before asking whether they are coming reads as a transaction
+            rather than an invitation — and it pushes the RSVP form further
+            down a page most guests skim on a phone. */}
+        {giftsSlot}
+
+        {moneyGifts.length > 0 && (
+          <MoneyGifts
+            items={moneyGifts}
+            locale={locale}
+            interactive={mode !== "preview"}
+          />
         )}
       </div>
 

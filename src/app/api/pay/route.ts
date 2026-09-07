@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   const slug =
     isValidSlug(body.slug) && getInvite(body.slug) ? (body.slug as string) : null;
 
-  addPremiumInterest(clean);
+  addPremiumInterest(clean, slug);
 
   // Two ids on purpose: `paymentId` authenticates Finik's webhook, so the
   // payer must never see it; `viewToken` is what their browser gets for the

@@ -48,6 +48,7 @@ export default async function PremiumLeadsPage({
               <tr>
                 <th>Дата</th>
                 <th>Тариф</th>
+                <th>Приглашение</th>
                 <th>Имя</th>
                 <th>WhatsApp</th>
                 <th>Язык</th>
@@ -61,6 +62,15 @@ export default async function PremiumLeadsPage({
                   <tr key={row.id}>
                     <td>{row.created_at}</td>
                     <td>{row.tier}</td>
+                    {/* The whole point of a lead: which invite to switch on
+                        once the transfer lands. */}
+                    <td>
+                      {row.invite_slug ? (
+                        <a href={`/i/${row.invite_slug}`}>/i/{row.invite_slug}</a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td>{row.name}</td>
                     <td>
                       <a href={`https://wa.me/${digits}`}>{row.phone}</a>
