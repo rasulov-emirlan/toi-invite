@@ -2,6 +2,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { logEvent } from "./db";
 import { ipFromHeaders, trackLimiter } from "./ratelimit";
+import { SID_HEADER, normalizeSid } from "./session";
 
 /**
  * Link-preview crawlers (WhatsApp/Telegram fetch every shared URL) and plain
@@ -26,7 +27,7 @@ export async function logPageView(
     const ua = h.get("user-agent") ?? "";
     if (BOT_UA_RE.test(ua)) return;
     if (!trackLimiter.check(`pv:${ipFromHeaders(h)}`, Date.now()).allowed) return;
-    logEvent(name, slug, ref);
+    logEvent(name, slug, ref, normalizeSid(h.get(SID_HEADER)));
   } catch (err) {
     console.error("logPageView failed", err);
   }

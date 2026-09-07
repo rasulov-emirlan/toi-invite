@@ -111,10 +111,20 @@ function db(): Database.Database {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_events_name_time ON events(name, created_at);
+    CREATE TABLE IF NOT EXISTS web_vitals (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      metric     TEXT NOT NULL,
+      value      REAL NOT NULL,
+      surface    TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_vitals_metric_time ON web_vitals(metric, created_at);
   `);
   migrateRsvps(handle);
   migrateInvites(handle);
   migrateInvitedGuests(handle);
+  migrateEvents(handle);
+  migratePremiumInterest(handle);
   _db = handle;
   return _db;
 }
@@ -182,6 +192,40 @@ function migrateInvites(handle: Database.Database) {
     `CREATE INDEX IF NOT EXISTS idx_invites_organizer_ref
      ON invites(organizer_ref) WHERE organizer_ref IS NOT NULL`,
   );
+}
+
+/**
+ * Events predate the anonymous visitor id. Legacy rows keep NULL and simply
+ * fall out of the distinct-visitor funnel — they still count in the raw
+ * per-name totals.
+ */
+function migrateEvents(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(events)") as Array<{ name: string }>).map((c) => c.name),
+  );
+  if (!cols.has("sid")) {
+    handle.exec("ALTER TABLE events ADD COLUMN sid TEXT");
+  }
+  handle.exec(
+    `CREATE INDEX IF NOT EXISTS idx_events_sid_name
+     ON events(sid, name) WHERE sid IS NOT NULL`,
+  );
+}
+
+/**
+ * A lead is only actionable if you know which invite to switch on. The order
+ * form already sent the slug; it was being dropped on the way to the table,
+ * leaving the operator with a name and a phone number and no way to fulfil.
+ */
+function migratePremiumInterest(handle: Database.Database) {
+  const cols = new Set(
+    (handle.pragma("table_info(premium_interest)") as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!cols.has("invite_slug")) {
+    handle.exec("ALTER TABLE premium_interest ADD COLUMN invite_slug TEXT");
+  }
 }
 
 export function createInvite(
@@ -464,6 +508,11 @@ function migrateInvitedGuests(handle: Database.Database) {
     const set = handle.prepare("UPDATE invited_guests SET token = ? WHERE id = ?");
     for (const r of rows) set.run(generateSlug(GUEST_TOKEN_LENGTH), r.id);
   }
+  if (!cols.has("phone")) {
+    // Optional: an organizer who only has a name still gets a personal link,
+    // just not the one-tap send.
+    handle.exec("ALTER TABLE invited_guests ADD COLUMN phone TEXT");
+  }
   handle.exec(
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_invited_guests_token
      ON invited_guests(invite_slug, token)`,
@@ -472,7 +521,13 @@ function migrateInvitedGuests(handle: Database.Database) {
 
 /** Organizer pastes a whole list: insert atomically, stopping at the cap.
  *  Returns how many were added (0 when the invite is missing or full). */
-export function addInvitedGuests(slug: string, names: string[]): number {
+export interface NewInvitedGuest {
+  name: string;
+  /** E.164, or null when the organizer only pasted a name. */
+  phone: string | null;
+}
+
+export function addInvitedGuests(slug: string, guests: NewInvitedGuest[]): number {
   const conn = db();
   const insert = conn.transaction((): number => {
     const exists = prep("SELECT 1 FROM invites WHERE slug = ?").get(slug);
@@ -481,17 +536,31 @@ export function addInvitedGuests(slug: string, names: string[]): number {
       slug,
     ) as { c: number };
     const room = Math.max(0, MAX_INVITED_PER_INVITE - c);
-    const toAdd = names.slice(0, room);
-    for (const name of toAdd) {
-      prep("INSERT INTO invited_guests (invite_slug, token, name) VALUES (?, ?, ?)").run(
-        slug,
-        generateSlug(GUEST_TOKEN_LENGTH),
-        name,
-      );
+    const toAdd = guests.slice(0, room);
+    for (const guest of toAdd) {
+      prep(
+        "INSERT INTO invited_guests (invite_slug, token, name, phone) VALUES (?, ?, ?, ?)",
+      ).run(slug, generateSlug(GUEST_TOKEN_LENGTH), guest.name, guest.phone);
     }
     return toAdd.length;
   });
   return insert();
+}
+
+/** Attach or clear a guest's number after the fact. Scoped to the invite so an
+ *  organizer token can only ever touch its own list. */
+export function setInvitedGuestPhone(
+  slug: string,
+  id: number,
+  phone: string | null,
+): boolean {
+  return (
+    prep("UPDATE invited_guests SET phone = ? WHERE invite_slug = ? AND id = ?").run(
+      phone,
+      slug,
+      id,
+    ).changes > 0
+  );
 }
 
 /** Organizer adds a guest to the list. Returns the new id, or null when the
@@ -548,6 +617,7 @@ export interface GuestBoardRow {
   id: number;
   token: string;
   name: string;
+  phone: string | null;
   opened_at: string | null;
   attendance: Attendance | null;
   guests_count: number | null;
@@ -561,7 +631,7 @@ export interface GuestBoardRow {
  */
 export function listGuestBoard(slug: string): GuestBoardRow[] {
   return prep(
-      `SELECT g.id, g.token, g.name, g.opened_at, r.attendance, r.guests_count
+      `SELECT g.id, g.token, g.name, g.phone, g.opened_at, r.attendance, r.guests_count
        FROM invited_guests g
        LEFT JOIN rsvps r ON r.id = (
          SELECT id FROM rsvps
@@ -667,6 +737,25 @@ export function recordPaymentNote(id: string, note: string): void {
   ).run(note, id);
 }
 
+export interface RecentInvite {
+  slug: string;
+  honoree: string;
+  partner: string | null;
+  event_date: string;
+  created_at: string;
+  premium_tier: string | null;
+}
+
+/** Newest invites, for the operator's manual-activation view. */
+export function listRecentInvites(limit = 40): RecentInvite[] {
+  return db()
+    .prepare(
+      `SELECT slug, honoree, partner, event_date, created_at, premium_tier
+         FROM invites ORDER BY created_at DESC, slug DESC LIMIT ?`,
+    )
+    .all(limit) as RecentInvite[];
+}
+
 /** Activate a paid tier on an invite (branding removal etc). */
 export function setInvitePremium(slug: string, tier: string): boolean {
   const info = prep("UPDATE invites SET premium_tier = ? WHERE slug = ?").run(tier, slug);
@@ -680,19 +769,92 @@ const EVENTS_RETENTION_DAYS = 90;
 let lastEventsPruneMs = 0;
 
 /** Append-only product event. Never throws — analytics must not break a request. */
-export function logEvent(name: string, slug: string | null = null, ref: string | null = null): void {
+export function logEvent(
+  name: string,
+  slug: string | null = null,
+  ref: string | null = null,
+  sid: string | null = null,
+): void {
   try {
     db();
-    prep("INSERT INTO events (name, slug, ref) VALUES (?, ?, ?)").run(name, slug, ref);
+    prep("INSERT INTO events (name, slug, ref, sid) VALUES (?, ?, ?, ?)").run(
+      name,
+      slug,
+      ref,
+      sid,
+    );
     const now = Date.now();
     if (now - lastEventsPruneMs > 3600_000) {
       lastEventsPruneMs = now;
       prep("DELETE FROM events WHERE created_at < datetime('now', ?)")
         .run(`-${EVENTS_RETENTION_DAYS} days`);
+      prep("DELETE FROM web_vitals WHERE created_at < datetime('now', ?)")
+        .run(`-${EVENTS_RETENTION_DAYS} days`);
     }
   } catch (err) {
     console.error("logEvent failed", err);
   }
+}
+
+/** A single Core Web Vitals sample. Same never-throw contract as logEvent. */
+export function logWebVital(metric: string, value: number, surface: string): void {
+  try {
+    db();
+    prep("INSERT INTO web_vitals (metric, value, surface) VALUES (?, ?, ?)").run(
+      metric,
+      value,
+      surface,
+    );
+  } catch (err) {
+    console.error("logWebVital failed", err);
+  }
+}
+
+/** Distinct visitors that reached each named step, over the given window. */
+export function funnelCounts(names: readonly string[], days: number): Record<string, number> {
+  const conn = db();
+  const out: Record<string, number> = {};
+  const stmt = conn.prepare(
+    `SELECT COUNT(DISTINCT sid) c FROM events
+     WHERE name = ? AND sid IS NOT NULL AND created_at >= datetime('now', ?)`,
+  );
+  for (const name of names) {
+    out[name] = (stmt.get(name, `-${days} days`) as { c: number }).c;
+  }
+  return out;
+}
+
+export interface VitalSample {
+  metric: string;
+  surface: string;
+  samples: number;
+  /** 75th percentile — the threshold Google's Core Web Vitals are scored at. */
+  p75: number;
+}
+
+/**
+ * p75 per (metric, surface) over the window — the percentile Core Web Vitals
+ * are scored at. SQLite has no percentile function, so this is nearest-rank:
+ * order each group's values and take rank ceil(0.75·n), which the integer
+ * expression (3n+3)/4 computes exactly. Done with window functions so a busy
+ * month of samples is never materialized in JS.
+ */
+export function vitalsP75(days: number): VitalSample[] {
+  return db()
+    .prepare(
+      `WITH ranked AS (
+         SELECT metric, surface, value,
+                ROW_NUMBER() OVER (PARTITION BY metric, surface ORDER BY value) rank,
+                COUNT(*)     OVER (PARTITION BY metric, surface)                n
+           FROM web_vitals
+          WHERE created_at >= datetime('now', ?)
+       )
+       SELECT metric, surface, n AS samples, value AS p75
+         FROM ranked
+        WHERE rank = (n * 3 + 3) / 4
+        ORDER BY metric, surface`,
+    )
+    .all(`-${days} days`) as VitalSample[];
 }
 
 export interface StatsSummary {
@@ -747,15 +909,20 @@ export function listPremiumInterest(): PremiumInterestRecord[] {
     ...r,
     tier: r.tier as PremiumTierKey,
     locale: r.locale as Locale,
+    // Rows written before the column existed read back undefined.
+    invite_slug: r.invite_slug ?? null,
   }));
 }
 
 /** Record a premium-tier interest lead (the payment fake-door). Returns the row id. */
-export function addPremiumInterest(clean: CleanPremiumInterest): number {
+export function addPremiumInterest(
+  clean: CleanPremiumInterest,
+  inviteSlug: string | null = null,
+): number {
   const info = db()
     .prepare(
-      `INSERT INTO premium_interest (tier, name, phone, locale, comment)
-       VALUES (@tier, @name, @phone, @locale, @comment)`,
+      `INSERT INTO premium_interest (tier, name, phone, locale, comment, invite_slug)
+       VALUES (@tier, @name, @phone, @locale, @comment, @invite_slug)`,
     )
     .run({
       tier: clean.tier,
@@ -763,6 +930,7 @@ export function addPremiumInterest(clean: CleanPremiumInterest): number {
       phone: clean.phone,
       locale: clean.locale,
       comment: clean.comment,
+      invite_slug: inviteSlug,
     });
   return Number(info.lastInsertRowid);
 }

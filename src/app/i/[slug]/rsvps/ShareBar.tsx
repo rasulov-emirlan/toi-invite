@@ -13,10 +13,14 @@ export default function ShareBar({
   slug,
   token,
   locale,
+  canPrint,
 }: {
   slug: string;
   token: string;
   locale: Locale;
+  /** `printExport` entitlement — decides whether the 300dpi file downloads or
+   *  the button sends the organizer to the pricing page. */
+  canPrint: boolean;
 }) {
   const tr = translator(locale);
   const [origin, setOrigin] = useState("");
@@ -104,9 +108,17 @@ export default function ShareBar({
         <a className="btn btn--ghost" href={`/api/card/${slug}?format=story`} download>
           {tr("create.download_story")} ↓
         </a>
-        <a className="btn btn--ghost" href={`/api/card/${slug}?format=print`} download>
-          {tr("create.download_print")} ↓
-        </a>
+        {canPrint ? (
+          <a className="btn btn--ghost" href={`/api/card/${slug}?format=print`} download>
+            {tr("create.download_print")} ↓
+          </a>
+        ) : (
+          /* The offer is named at the moment it is wanted — the organizer is
+             here because they are about to send this to a printer. */
+          <a className="btn btn--ghost" href={`/premium?lang=${locale}&slug=${slug}`}>
+            {tr("create.download_print")} ✦
+          </a>
+        )}
         <button
           type="button"
           className="btn btn--ghost"

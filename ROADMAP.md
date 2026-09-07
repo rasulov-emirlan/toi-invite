@@ -26,11 +26,23 @@ hardening + db tests.
    открытка instead. Follow-up idea kept: a private «кто поздравил» thank-you
    ledger for the organizer.
 
-## Next up — high impact, low effort
+## Shipped 2026-09-07
 
-3. **Guest phone numbers on the board** + `wa.me/<phone>` direct sends. Turns
-   reminders from copy-paste labor into one tap per guest — that *is* the
-   management job for a 150-guest toi.
+3. ~~**Guest phone numbers on the board** + `wa.me/<phone>` direct sends~~ —
+   pasted lines carry the number after the name («Айбек 0555 12 34 56»,
+   `parseGuestLine`), and the paid tier turns each guest's row into a direct
+   WhatsApp chat instead of the contact picker. This is now what the 990 сом
+   buys, alongside the A5 print file; watermark removal is no longer the pitch.
+   Board also got all/pending/coming filters.
+
+   Also this pass: Cormorant Garamond + Marck Script on the invites (the whole
+   card was set in Inter), the ornament plates shown as frames instead of being
+   `cover`-cropped to two bands, a real per-template gallery on `/premium`,
+   distinct-visitor funnel + Core Web Vitals + a decision-first `/admin/stats`,
+   and `/admin/activate` so an mbank transfer can activate a tier while Finik
+   is blocked.
+
+## Next up — high impact, low effort
 
 ## Structural bets (multi-day)
 
@@ -44,9 +56,10 @@ hardening + db tests.
 6. **Day-of banquet mode** — check-in toggle on the guest list, printable
    seating/table list («для тамады»). The tamada is the strongest referral
    channel in this market.
-7. **Real payments (mbank/FreedomPay)** — only after the fake-door + concierge
-   signals say which tier to build. Watch `/premium/leads` for the
-   concierge-vs-cosmetics split.
+7. **Live Finik capture** — the code path is written and manual activation
+   covers the gap; unblocking is two operator actions (buy the domain, register
+   our RSA public key). Watch `/premium/leads` for the concierge-vs-self-serve
+   split in the meantime.
 
 ## Deliberately not now
 

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   PREMIUM_TIERS,
+  VISIBLE_TIERS,
+  entitlementsFor,
   PREMIUM_LIMITS,
   formatSom,
   getTier,
@@ -167,6 +169,78 @@ describe("validatePremiumInterest", () => {
     if (!res.ok) {
       expect(res.errors).toContain("locale");
       expect(res.errors).toContain("comment");
+    }
+  });
+});
+
+describe("VISIBLE_TIERS", () => {
+  it("shows every tier that isn't explicitly hidden", () => {
+    // `hidden` is the escape hatch for a tier whose promises the product
+    // doesn't keep yet — nothing is hidden today.
+    expect(VISIBLE_TIERS.map((t) => t.key)).toEqual(
+      PREMIUM_TIERS.filter((t) => !t.hidden).map((t) => t.key),
+    );
+    for (const t of VISIBLE_TIERS) expect(t.hidden).toBeFalsy();
+  });
+
+  it("still shows exactly one recommended tier", () => {
+    expect(VISIBLE_TIERS.filter((t) => t.popular)).toHaveLength(1);
+  });
+
+  it("keeps every hidden tier resolvable, so stored rows never throw", () => {
+    for (const t of PREMIUM_TIERS) expect(getTier(t.key).key).toBe(t.key);
+  });
+
+  it("never shows a payable tier that is hidden", () => {
+    for (const t of PREMIUM_TIERS) if (t.hidden) expect(t.payable).toBe(false);
+  });
+
+  it("prices the ladder so each rung adds something concrete", () => {
+    const media = getTier("premium");
+    const control = getTier("pro");
+    expect(media.priceSom).toBeLessThan(control.priceSom);
+    // Media buys finished files; Control buys those plus the workflow.
+    expect(media.entitlements.printExport).toBe(true);
+    expect(media.entitlements.directSend).toBe(false);
+    expect(control.entitlements.directSend).toBe(true);
+  });
+
+  it("never takes an entitlement away as the price goes up", () => {
+    const ladder = PREMIUM_TIERS.filter((t) => t.orderable).sort(
+      (a, b) => a.priceSom - b.priceSom,
+    );
+    const keys = ["cleanMedia", "printExport", "cleanSite", "directSend", "concierge"] as const;
+    for (let i = 1; i < ladder.length; i += 1) {
+      for (const k of keys) {
+        if (ladder[i - 1].entitlements[k]) {
+          expect(ladder[i].entitlements[k], `${ladder[i].key}.${k}`).toBe(true);
+        }
+      }
+    }
+  });
+});
+
+describe("entitlementsFor", () => {
+  it("gives an unpaid invite nothing", () => {
+    expect(entitlementsFor(null)).toEqual({
+      cleanMedia: false,
+      printExport: false,
+      cleanSite: false,
+      directSend: false,
+      concierge: false,
+    });
+  });
+
+  it("resolves a stored tier key", () => {
+    expect(entitlementsFor("pro").directSend).toBe(true);
+    expect(entitlementsFor("premium").cleanMedia).toBe(true);
+  });
+
+  it("never throws on a value the column should not hold", () => {
+    // A render path deciding whether to draw a watermark must not 500 on a
+    // legacy or malformed tier — it falls back to unpaid.
+    for (const bad of ["", "gold", "PREMIUM", undefined]) {
+      expect(entitlementsFor(bad).cleanMedia).toBe(false);
     }
   });
 });

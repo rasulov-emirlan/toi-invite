@@ -5,6 +5,7 @@ import { createInvite, logEvent } from "@/lib/db";
 import { clientKey, inviteLimiter } from "@/lib/ratelimit";
 import { generateToken } from "@/lib/slug";
 import type { InviteInput } from "@/lib/types";
+import { sidFromRequest } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
 
   try {
     const { slug, token } = createInvite(result.value, organizerRef);
-    logEvent("invite_created", slug, result.value.created_ref);
+    logEvent("invite_created", slug, result.value.created_ref, sidFromRequest(req));
     const res = NextResponse.json({ slug, token }, { status: 201 });
     res.cookies.set(ORGANIZER_COOKIE, organizerRef, {
       httpOnly: true,

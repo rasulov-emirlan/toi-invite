@@ -409,7 +409,7 @@ select:focus-visible {
 
 .tpl-choices {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
   gap: 0.75rem;
 }
 
@@ -428,7 +428,8 @@ select:focus-visible {
 }
 
 .tpl-choice .swatch {
-  height: 4.5rem;
+  display: block;
+  aspect-ratio: 3 / 4;
 }
 
 .tpl-choice .swatch span {
@@ -679,6 +680,11 @@ select:focus-visible {
   --tink: #2a2016;
   --tmuted: #7a6a4f;
   --tsurface: #fffdf7;
+  /* The product chrome is a tool and stays on Inter; the invite is a
+     ceremonial object. Overriding --font-display inside this subtree re-sets
+     every heading on the card without touching the rest of the site. */
+  --font-display: "Cormorant Garamond", "Times New Roman", Georgia, serif;
+  --font-script: "Marck Script", "Cormorant Garamond", cursive;
   min-height: 100vh;
   background: var(--tbg);
   color: var(--tink);
@@ -731,19 +737,34 @@ select:focus-visible {
   overflow: hidden;
 }
 
+/* The template art is a FRAME — an ornamental border around an empty middle.
+   `cover` cropped it to two thin bands top and bottom, which is why the best
+   asset in the product was nearly invisible. Stretching it to the box is the
+   correct treatment for a border: the ornament runs all the way round the
+   names, which is what a toi invitation looks like. */
 .invite__hero {
   position: relative;
-  padding: 3.5rem 1.5rem 2.5rem;
+  padding: 4.5rem 2.25rem 3.5rem;
   text-align: center;
-  background-size: cover;
+  /* Past 100% so the photographed paper edge some plates carry is trimmed
+     rather than framed; every ornament sits well inside that margin. */
+  background-size: 112% 112%;
+  background-repeat: no-repeat;
   background-position: center;
 }
 
+/* Only enough veil to keep the names readable over the busiest ornament —
+   the old flat 55% white wash bleached the art out entirely. */
 .invite__hero::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), var(--tsurface));
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 45%,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(255, 255, 255, 0.5) 55%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .invite__hero > * {
@@ -755,26 +776,30 @@ select:focus-visible {
   font-family: var(--font-body);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.78rem;
+  letter-spacing: 0.24em;
+  font-size: 0.7rem;
   color: var(--ac);
 }
 
 .invite__names {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(2.1rem, 8vw, 3.4rem);
-  line-height: 1.05;
+  font-weight: 600;
+  font-size: clamp(2.6rem, 10vw, 4.2rem);
+  line-height: 1.02;
+  letter-spacing: 0.005em;
   margin: 1rem 0 0.4rem;
   color: var(--tink);
 }
 
+/* The "и"/"жана" between two names is the one handwritten note on the card. */
 .invite__amp {
+  font-family: var(--font-script);
   color: var(--ac);
   font-weight: 400;
   display: block;
-  font-size: 0.55em;
-  margin: 0.3rem 0;
+  font-size: 0.42em;
+  line-height: 1;
+  margin: 0.45rem 0 0.3rem;
 }
 
 .invite__body {
@@ -783,18 +808,22 @@ select:focus-visible {
 
 .invite__salutation {
   text-align: center;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1.35rem;
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-size: 1.7rem;
+  line-height: 1.3;
   color: var(--ac);
   margin: 0 auto 0.75rem;
 }
 
 .invite__greeting {
-  font-size: 1.12rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.6;
   text-align: center;
   color: var(--tink);
-  max-width: 34ch;
+  max-width: 32ch;
   margin: 0 auto 2rem;
 }
 
@@ -915,7 +944,8 @@ select:focus-visible {
 
 .rsvp h2 {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-weight: 600;
+  font-size: 1.9rem;
   text-align: center;
   color: var(--tink);
   margin-bottom: 1.5rem;
@@ -1301,12 +1331,22 @@ select:focus-visible {
   margin: 2rem 0;
 }
 
+/* The admin dashboard's headline row. (Was previously unstyled — the class
+   name never matched .statgrid, so the tiles stacked full-width.) */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
 .stat {
   border: 1px solid var(--gray-300);
   padding: 1.2rem;
 }
 
 .stat__num {
+  display: block;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 2.2rem;
@@ -1318,11 +1358,22 @@ select:focus-visible {
 }
 
 .stat__label {
+  display: block;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--gray-500);
+  margin-top: 0.5rem;
+}
+
+/* The question the number answers — a metric with no decision attached is
+   decoration. */
+.stat__asks {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--gray-800);
   margin-top: 0.5rem;
 }
 
@@ -1617,6 +1668,82 @@ table.rsvps th {
 .guestcard__name {
   font-weight: 600;
 }
+/* The guest's number, doubling as the control that sets it — an empty slot
+   reads "+ Номер" so a 150-name list can be filled in one pass down the page. */
+.guestcard__phonebtn {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  border-bottom: 1px dashed var(--gray-300);
+}
+.guestcard__phonebtn:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.guestcard__phone {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.guestcard__phone input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0;
+}
+.guestcard__phone .btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.chiprow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--gray-300);
+  background: #fff;
+  color: var(--gray-800);
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* Shown only once the organizer has numbers on file — the upsell describes
+   something they can already see the shape of, not an abstraction. */
+.board-upsell {
+  border-left: 3px solid var(--red);
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+  background: var(--gray-100);
+  font-size: 0.9rem;
+  color: var(--gray-800);
+}
+.board-upsell a {
+  color: var(--ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .guestcard__actions {
   display: flex;
   gap: 0.5rem;
@@ -1691,14 +1818,42 @@ table.rsvps th {
   border: 1px solid var(--gray-300);
   background: #fff;
   padding: 0.6rem;
+  display: block;
+  text-decoration: none;
+  transition: border-color 140ms ease, transform 140ms ease;
 }
+.tpl-gallery__item:hover {
+  border-color: var(--ink);
+  transform: translateY(-2px);
+}
+/* A window onto the top of a real card: the card is laid out at a fixed
+   phone width and scaled down, so the preview is the actual component
+   rather than a separately-maintained thumbnail. */
 .tpl-gallery__art {
-  aspect-ratio: 1200 / 630;
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  position: relative;
+}
+.tpl-gallery__card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 380px;
+  margin-left: -190px;
+  transform: scale(0.62);
+  /* Centred origin so the card stays mounted in the middle whatever width
+     the auto-fill grid hands the tile. */
+  transform-origin: top center;
+  pointer-events: none;
+}
+@media (max-width: 30rem) {
+  .tpl-gallery {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+  .tpl-gallery__card {
+    transform: scale(0.42);
+  }
 }
 .tpl-gallery__name {
   font-family: var(--font-mono);

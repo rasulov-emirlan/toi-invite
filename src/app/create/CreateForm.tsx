@@ -580,11 +580,15 @@ export default function CreateForm({
                 aria-pressed={template === tpl.key}
                 onClick={() => setTemplate(tpl.key)}
               >
+                {/* The plates are frames, so `cover` cropped all six to a
+                    near-identical strip of border. Showing the whole frame is
+                    what makes them tellable apart at a glance. */}
                 <span className="swatch">
                   <span
                     style={{
-                      backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0)), url(${tpl.heroImage})`,
-                      backgroundSize: "cover",
+                      backgroundImage: `url(${tpl.heroImage})`,
+                      backgroundSize: "112% 112%",
+                      backgroundRepeat: "no-repeat",
                       backgroundPosition: "center",
                     }}
                   />
@@ -1068,8 +1072,11 @@ function SuccessPanel({
           <a className="btn btn--ghost" href={`/api/card/${result.slug}?format=story`} download>
             {tr("create.download_story")} ↓
           </a>
-          <a className="btn btn--ghost" href={`/api/card/${result.slug}?format=print`} download>
-            {tr("create.download_print")} ↓
+          {/* A just-created invite is always on the free tier, so this is the
+              upsell rather than a download — named at the moment the organizer
+              is thinking about printing. */}
+          <a className="btn btn--ghost" href={`/premium?lang=${locale}&slug=${result.slug}`}>
+            {tr("create.download_print")} ✦
           </a>
         </div>
         <p className="hint" style={{ marginTop: "0.5rem" }}>

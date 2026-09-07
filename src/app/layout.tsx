@@ -11,9 +11,19 @@ import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
+// The invites themselves are ceremonial, not UI: Cormorant Garamond (a
+// Cyrillic-complete garalde) sets the names and greeting, Marck Script the
+// handwritten connector. Both carry cyrillic + cyrillic-ext, so Кыргызча
+// glyphs (ө ү ң) render in the real face instead of falling back mid-word.
+// unicode-range keeps a Cyrillic visitor from downloading the latin subsets.
+import "@fontsource/cormorant-garamond/400.css";
+import "@fontsource/cormorant-garamond/500.css";
+import "@fontsource/cormorant-garamond/600.css";
+import "@fontsource/marck-script/400.css";
 import "./globals.css";
 import { headers } from "next/headers";
 import { BASE_URL } from "@/lib/base-url";
+import WebVitals from "@/components/WebVitals";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -28,7 +38,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const lang = (await headers()).get("x-ui-lang") ?? "ru";
   return (
     <html lang={lang}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <WebVitals />
+      </body>
     </html>
   );
 }

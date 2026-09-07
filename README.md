@@ -44,6 +44,8 @@ RSVPs persist to `./data/toi.db` (override with `DB_PATH`).
 | `GET /api/og/<slug>` | Dynamic 1200×630 OG card (satori → JPEG) |
 | `GET /api/ics/<slug>` | Download an `.ics` calendar file |
 | `POST /api/track` | First-party analytics beacon (share/calendar/create-own clicks) |
+| `POST /api/vitals` | Core Web Vitals beacon (LCP/INP/CLS, bucketed by page shape) |
+| `/admin/activate?token=<ADMIN_TOKEN>` | Operator: turn on a paid tier after an mbank transfer |
 
 ## Localization
 
@@ -60,17 +62,59 @@ so OpenGraph image URLs resolve absolute.
 docker compose up -d --build
 ```
 
-## Premium (payment fake-door)
+## Premium
 
-`/premium` shows the tiers (free · Премиум 990 сом · Про 1490 сом) and captures
-**interest** — name + WhatsApp number + chosen tier — into a `premium_interest`
-table via `POST /api/premium-interest`. No real charge runs yet; it measures
-willingness-to-pay before wiring mbank/FreedomPay. With `ADMIN_TOKEN` set, view
-leads at `/premium/leads?token=<ADMIN_TOKEN>` and download CSV at
-`/api/premium-leads?token=<ADMIN_TOKEN>`.
+`/premium` shows the ladder: free · **Медиа-пакет 490** · **Той под контролем
+990** · Под ключ 1990. Each rung adds something concrete, and a rung never
+takes an entitlement away (there is a test for that).
+
+| | Free | Медиа 490 | Контроль 990 | Под ключ 1990 |
+|---|---|---|---|---|
+| Invite site, 6 designs, RSVP, guest board | ✓ | ✓ | ✓ | ✓ |
+| Story card + video invite | watermarked | **clean** | clean | clean |
+| Gift list, money requisites, CSV for the тамада | ✓ | ✓ | ✓ | ✓ |
+| **A5 300dpi print file** | — | **✓** | ✓ | ✓ |
+| No «Той-Invite» wordmark on the invite | — | — | **✓** | ✓ |
+| **One-tap personal WhatsApp per guest** (`wa.me/<number>`) | — | — | **✓** | ✓ |
+| We fill it in for you over WhatsApp | — | — | — | **✓** |
+
+The free tier is the distribution engine — the watermarked story card and video
+are what get forwarded, and the watermark is the advertising. 490 buys the
+finished files (the price band KG families are seen asking on lalafo for a
+custom digital invitation). 990 buys back the evening an organizer would spend
+finding 150 people in their contacts.
+
+The ladder lives in `entitlements` on each tier, resolved through
+`entitlementsFor(invite.premium_tier)` — total over null, legacy and malformed
+values, because a render path deciding whether to draw a watermark must never
+throw. Do not reintroduce `invite.premium_tier !== null` checks: that predicate
+can only express one rung.
+
+**Taking money.** Finik acquiring is wired (`POST /api/pay` → checkout →
+signed webhook → `setInvitePremium`) but needs a real domain + our RSA public
+key registered with Finik. Until then, `/admin/activate?token=<ADMIN_TOKEN>`
+turns an mbank transfer into an activated tier by hand; it logs
+`payment_succeeded` with `ref=manual:<tier>` so manual revenue shows up in the
+funnel next to card payments. Interest leads still land in `premium_interest`
+(`/premium/leads?token=…`, CSV at `/api/premium-leads?token=…`).
+
+## Analytics
+
+First-party, no third-party tag (guests are on cheap Androids inside the
+WhatsApp WebView). Two tables:
+
+- **`events`** — product events carrying an anonymous `sid` (HttpOnly cookie
+  minted in the middleware). `src/lib/funnel.ts` defines the ordered funnel;
+  `funnelCounts` counts **distinct visitors** per step, so a reload is one
+  person. `/admin/stats?token=…` renders it plus the K-factor.
+- **`web_vitals`** — LCP/INP/CLS from real devices via `useReportWebVitals`
+  (`src/components/WebVitals.tsx`), bucketed by page *shape* (`landing`,
+  `create`, `invite`, `premium`) rather than path, so no invite slug is ever
+  stored. `vitalsP75` does nearest-rank p75 in SQL.
 
 ## Not built yet
 
-Real payment capture (mbank / FreedomPay), phone/WhatsApp login (organizer
-identity is cookie+localStorage today), per-event-type art variants,
-tamada/decorator partner referral cut. See `~/.nightshift/state/toi-invite.md`.
+Live Finik capture (blocked on the domain + RSA key registration),
+phone/WhatsApp login (organizer identity is cookie+localStorage today),
+per-event-type art variants, tamada/decorator partner referral cut.
+See `~/.nightshift/state/toi-invite.md`.

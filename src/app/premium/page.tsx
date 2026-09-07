@@ -1,16 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { DEFAULT_LOCALE, isLocale, translator } from "@/lib/i18n";
-import { TEMPLATES } from "@/lib/templates";
+import { TEMPLATES, paletteVars } from "@/lib/templates";
 import { finikConfigured } from "@/lib/finik";
 import { isValidSlug } from "@/lib/slug";
+import { sampleInvite } from "@/lib/sample-invite";
+import { logPageView } from "@/lib/pageview";
 import type { Locale } from "@/lib/types";
+import InviteCard from "@/components/InviteCard";
 import PremiumOrder from "./PremiumOrder";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
-  title: "Премиум · Той-Invite",
+  title: "Тарифы · Той-Invite",
   description:
-    "Приглашение без надписи «Той-Invite», личная помощь в WhatsApp и именные ссылки для гостей. Оплата в сомах через Finik.",
+    "490 сом — приглашение, видео и открытка без водяного знака плюс A5 для типографии. 990 сом — личное сообщение каждому гостю в WhatsApp в один тап. Оплата в сомах.",
 };
 
 export default async function PremiumPage({
@@ -25,6 +30,9 @@ export default async function PremiumPage({
   const targetSlug = isValidSlug(sp.slug) ? sp.slug : undefined;
   const tr = translator(locale);
   const other: Locale = locale === "ru" ? "ky" : "ru";
+  const sample = sampleInvite(locale);
+  // The step that turns a user into a prospect — the pay-rate denominator.
+  await logPageView("premium_view", targetSlug ?? null);
 
   return (
     <>
@@ -61,17 +69,34 @@ export default async function PremiumPage({
           <p style={{ color: "var(--gray-500)", maxWidth: "60ch" }}>
             {tr("premium.examples_hint")}
           </p>
+          {/* Each tile is the real InviteCard under that template's palette, not
+              the bare frame art — an empty ornament border tells a visitor
+              nothing about what they are buying. */}
           <div className="tpl-gallery">
             {TEMPLATES.map((tpl) => (
-              <div className="tpl-gallery__item" key={tpl.key}>
-                <div
-                  className="tpl-gallery__art"
-                  style={{ backgroundImage: `url(${tpl.heroImage})` }}
-                />
+              <Link
+                className="tpl-gallery__item"
+                key={tpl.key}
+                href={`/demo?lang=${locale}&template=${tpl.key}`}
+              >
+                <div className="tpl-gallery__art">
+                  <div
+                    className="invite invite--embed tpl-gallery__card"
+                    lang={locale}
+                    style={paletteVars(tpl) as React.CSSProperties}
+                    aria-hidden
+                  >
+                    <InviteCard
+                      invite={{ ...sample, template: tpl.key }}
+                      locale={locale}
+                      mode="preview"
+                    />
+                  </div>
+                </div>
                 <span className="tpl-gallery__name" style={{ color: tpl.palette.accent }}>
                   {tpl.names[locale]}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
           <p style={{ marginTop: "1rem" }}>

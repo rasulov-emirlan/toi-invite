@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { validatePremiumInterest } from "@/lib/premium";
-import { addPremiumInterest, logEvent } from "@/lib/db";
+import { addPremiumInterest, getInvite, logEvent } from "@/lib/db";
 import { clientKey, premiumInterestLimiter } from "@/lib/ratelimit";
+import { isValidSlug } from "@/lib/slug";
+import { sidFromRequest } from "@/lib/session";
 import type { PremiumInterestInput } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -16,9 +18,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: PremiumInterestInput;
+  let body: PremiumInterestInput & { slug?: unknown };
   try {
-    body = (await req.json()) as PremiumInterestInput;
+    body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
@@ -28,9 +30,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "validation", fields: result.errors }, { status: 400 });
   }
 
+  // The order form always sends the invite it was opened from; without it the
+  // operator gets a name and a phone number and no idea what to activate.
+  // Only accepted when the invite actually exists.
+  const slug =
+    isValidSlug(body.slug) && getInvite(body.slug) ? (body.slug as string) : null;
+
   try {
-    addPremiumInterest(result.value);
-    logEvent("premium_interest", null, result.value.tier);
+    addPremiumInterest(result.value, slug);
+    logEvent("premium_interest", slug, result.value.tier, sidFromRequest(req));
     return NextResponse.json({ ok: true }, { status: 201 });
   } catch (err) {
     console.error("addPremiumInterest failed", err);

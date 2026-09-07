@@ -1,4 +1,5 @@
 import { isLocale } from "./i18n";
+import { normalizeKgPhone } from "./phone";
 import type { ValidationResult } from "./validation";
 import type { Locale, PremiumInterestInput, PremiumTierKey } from "./types";
 
@@ -9,6 +10,31 @@ import type { Locale, PremiumInterestInput, PremiumTierKey } from "./types";
  * ones quoted to prospects; `orderable` gates which tiers the form accepts (the
  * free tier is not an order).
  */
+/**
+ * The unlockable capabilities, named after the outcome the buyer wants rather
+ * than the code that implements it.
+ */
+export interface TierEntitlements {
+  /** Story card and video render without the «Той-Invite» stamp. */
+  cleanMedia: boolean;
+  /** The A5 300dpi file a printer will take. */
+  printExport: boolean;
+  /** The invite page itself drops our wordmark. */
+  cleanSite: boolean;
+  /** Guest phone numbers and one-tap `wa.me/<number>` sends on the board. */
+  directSend: boolean;
+  /** We fill the invite in for them over WhatsApp. */
+  concierge: boolean;
+}
+
+const NOTHING: TierEntitlements = {
+  cleanMedia: false,
+  printExport: false,
+  cleanSite: false,
+  directSend: false,
+  concierge: false,
+};
+
 export interface PremiumTier {
   key: PremiumTierKey;
   /** Price in KGS for one toi. 0 for the free tier. */
@@ -20,6 +46,14 @@ export interface PremiumTier {
   payable: boolean;
   /** Highlighted as the recommended tier. */
   popular: boolean;
+  /** Kept in the config but not shown: a tier whose promises the product
+   *  doesn't keep yet sells worse than a shorter menu, and deleting the key
+   *  outright would break `getTier` for any row that already stores it. */
+  hidden?: boolean;
+  /** What this tier actually unlocks. The ladder lives here rather than in
+   *  scattered `invite.premium_tier !== null` checks — those could only ever
+   *  express "paid / not paid", which is one rung. */
+  entitlements: TierEntitlements;
   names: Record<Locale, string>;
   tagline: Record<Locale, string>;
   /** Feature bullets, per locale. Equal length across locales (enforced by test). */
@@ -33,80 +67,97 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     orderable: false,
     payable: false,
     popular: false,
+    entitlements: NOTHING,
     names: { ru: "Бесплатный", ky: "Акысыз" },
     tagline: { ru: "Всё для одного тоя", ky: "Бир той үчүн баары" },
     features: {
       ru: [
-        "1 приглашение",
-        "6 дизайнов: классика и кыргызский оймо",
+        "Сайт-приглашение и 6 дизайнов",
         "Учёт гостей и пожелания (RSVP)",
         "Именные ссылки для каждого гостя",
-        "Открытка-картинка для WhatsApp и печати (с QR)",
+        "Открытка для WhatsApp (с QR)",
+        "Видео-приглашение для WhatsApp",
+        "Список подарков и реквизиты для поздравлений",
         "Экспорт списка для тамады (CSV)",
-        "Ссылка красиво раскрывается в WhatsApp",
       ],
       ky: [
-        "1 чакыруу",
-        "6 дизайн: классика жана кыргыз оймосу",
+        "Чакыруу-сайт жана 6 дизайн",
         "Меймандарды эсептөө жана каалоо-тилектер (RSVP)",
         "Ар бир мейманга аты жазылган шилтеме",
-        "WhatsApp жана басып чыгаруу үчүн открытка (QR менен)",
+        "WhatsApp үчүн открытка (QR менен)",
+        "WhatsApp үчүн видео-чакыруу",
+        "Белектер тизмеси жана куттуктоо реквизиттери",
         "Тамада үчүн тизме экспорту (CSV)",
-        "Шилтеме WhatsApp'та кооз ачылат",
       ],
     },
   },
   {
+    // The finished files, at the price KG families are actually seen asking
+    // for a custom digital invitation on lalafo (200-500 сом).
     key: "premium",
-    priceSom: 990,
+    priceSom: 490,
     orderable: true,
     payable: true,
-    popular: true,
-    names: { ru: "Премиум", ky: "Премиум" },
+    popular: false,
+    entitlements: {
+      ...NOTHING,
+      cleanMedia: true,
+      printExport: true,
+    },
+    names: { ru: "Медиа-пакет", ky: "Медиа-топтом" },
     tagline: {
-      ru: "Для тех, кто хочет вау-эффект",
-      ky: "Вау-эффект каалагандар үчүн",
+      ru: "Готовые файлы без водяного знака",
+      ky: "Суу белгисиз даяр файлдар",
     },
     features: {
       ru: [
         "Всё из бесплатного",
-        "Без надписи «Той-Invite» — на сайте и на открытке",
-        "Открытка для печати без водяного знака",
-        "Приоритетная помощь в WhatsApp",
-        "Ранний доступ к новым дизайнам",
+        "Видео-приглашение без водяного знака",
+        "Открытка для WhatsApp без водяного знака",
+        "Файл для типографии: A5, 300 dpi",
       ],
       ky: [
         "Акысыздын баары",
-        "«Той-Invite» жазуусуз — сайтта да, открыткада да",
-        "Басып чыгарууга суу белгисиз открытка",
-        "WhatsApp'та биринчи кезекте жардам",
-        "Жаңы дизайндарга эрте жетки",
+        "Суу белгисиз видео-чакыруу",
+        "WhatsApp үчүн суу белгисиз открытка",
+        "Басмакана үчүн файл: A5, 300 dpi",
       ],
     },
   },
   {
+    // The labour saver. 490 sells finished files; this sells back the evening
+    // an organizer would otherwise spend finding 150 people in their contacts.
     key: "pro",
-    priceSom: 1490,
+    priceSom: 990,
     orderable: true,
-    payable: false,
-    popular: false,
-    names: { ru: "Про", ky: "Про" },
+    payable: true,
+    popular: true,
+    entitlements: {
+      cleanMedia: true,
+      printExport: true,
+      cleanSite: true,
+      directSend: true,
+      concierge: false,
+    },
+    names: { ru: "Той под контролем", ky: "Той көзөмөлдө" },
     tagline: {
-      ru: "Для тамады и больших тоев",
-      ky: "Тамада жана чоң тойлор үчүн",
+      ru: "Когда гостей больше сотни",
+      ky: "Меймандар жүздөн ашканда",
     },
     features: {
       ru: [
-        "Всё из Премиум",
-        "Фотоальбом тоя",
-        "Несколько событий в одной ссылке",
-        "Свой логотип и цвета",
+        "Всё из Медиа-пакета",
+        "Каждому гостю — личное сообщение в WhatsApp в один тап",
+        "Список гостей: кто получил, кто открыл, кто ответил",
+        "Без надписи «Той-Invite» на самом приглашении",
+        "Приоритетная помощь в WhatsApp",
       ],
       ky: [
-        "Премиумдун баары",
-        "Той фотоальбому",
-        "Бир шилтемеде бир нече иш-чара",
-        "Өз логотипиңиз жана түстөрүңүз",
+        "Медиа-топтомдун баары",
+        "Ар бир мейманга WhatsApp'та бир басууда жеке кабар",
+        "Меймандар тизмеси: ким алды, ким ачты, ким жооп берди",
+        "Чакыруунун өзүндө «Той-Invite» жазуусу жок",
+        "WhatsApp'та биринчи кезекте жардам",
       ],
     },
   },
@@ -118,6 +169,13 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     orderable: true,
     payable: false,
     popular: false,
+    entitlements: {
+      cleanMedia: true,
+      printExport: true,
+      cleanSite: true,
+      directSend: true,
+      concierge: true,
+    },
     names: { ru: "Под ключ", ky: "Даяр чечим" },
     tagline: {
       ru: "Пришлите данные в WhatsApp — сделаем за вас",
@@ -125,13 +183,13 @@ export const PREMIUM_TIERS: PremiumTier[] = [
     },
     features: {
       ru: [
-        "Всё из Про",
+        "Всё из «Той под контролем»",
         "Заполним и оформим за вас",
         "Готово в течение 2 часов",
         "Правки до самого тоя",
       ],
       ky: [
-        "Пронун баары",
+        "«Той көзөмөлдө» баары",
         "Баарын өзүбүз толтуруп, кооздойбуз",
         "2 сааттын ичинде даяр",
         "Тойго чейин оңдоолор",
@@ -149,6 +207,19 @@ export function getTier(key: PremiumTierKey): PremiumTier {
   const cfg = BY_KEY.get(key);
   if (!cfg) throw new Error(`unknown premium tier: ${key}`);
   return cfg;
+}
+
+/** The tiers a visitor should actually see. */
+export const VISIBLE_TIERS: PremiumTier[] = PREMIUM_TIERS.filter((t) => !t.hidden);
+
+/**
+ * What an invite's stored tier unlocks. Total over anything the column might
+ * hold — null, a legacy key, a typo — because a render path must never throw
+ * on the way to deciding whether to draw a watermark.
+ */
+export function entitlementsFor(tier: string | null | undefined): TierEntitlements {
+  if (!tier) return NOTHING;
+  return BY_KEY.get(tier as PremiumTierKey)?.entitlements ?? NOTHING;
 }
 
 export function isOrderableTier(v: unknown): v is PremiumTierKey {
@@ -179,16 +250,6 @@ function str(v: unknown): string {
  * (no KG operator/area code begins with 0 or 1), which rejects obvious junk
  * like `000000000` without rejecting any real number.
  */
-export function normalizeKgPhone(raw: string): string | null {
-  const digits = raw.replace(/\D+/g, "");
-  let national: string;
-  if (digits.length === 12 && digits.startsWith("996")) national = digits.slice(3);
-  else if (digits.length === 10 && digits.startsWith("0")) national = digits.slice(1);
-  else if (digits.length === 9) national = digits;
-  else return null;
-  if (!/^[2-9]\d{8}$/.test(national)) return null;
-  return `+996${national}`;
-}
 
 export interface CleanPremiumInterest {
   tier: PremiumTierKey;
@@ -237,3 +298,6 @@ export function validatePremiumInterest(
     },
   };
 }
+
+// Re-exported so the premium surfaces keep one import for "a KG phone number".
+export { normalizeKgPhone };

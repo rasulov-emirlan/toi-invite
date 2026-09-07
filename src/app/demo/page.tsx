@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { isLocale, translator, DEFAULT_LOCALE } from "@/lib/i18n";
-import { getTemplate, paletteVars } from "@/lib/templates";
+import { getTemplate, isTemplate, paletteVars } from "@/lib/templates";
 import { sampleInvite } from "@/lib/sample-invite";
 import type { Locale } from "@/lib/types";
 import InviteCard from "@/components/InviteCard";
@@ -17,14 +17,18 @@ export const metadata: Metadata = {
 export default async function DemoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; template?: string }>;
 }) {
   const sp = await searchParams;
   const locale: Locale = isLocale(sp.lang) ? sp.lang : DEFAULT_LOCALE;
   const other: Locale = locale === "ru" ? "ky" : "ru";
   const tr = translator(locale);
-  const invite = sampleInvite(locale);
+  const base = sampleInvite(locale);
+  // ?template= lets the pricing gallery and the builder link straight into a
+  // full-size example of one design instead of only the default.
+  const invite = isTemplate(sp.template) ? { ...base, template: sp.template } : base;
   const tpl = getTemplate(invite.template);
+  const langHref = `/demo?lang=${other}${isTemplate(sp.template) ? `&template=${sp.template}` : ""}`;
 
   return (
     <div className="invite" lang={locale} style={paletteVars(tpl) as React.CSSProperties}>
@@ -36,7 +40,7 @@ export default async function DemoPage({
       </div>
 
       <div className="invite__lang">
-        <Link href={`/demo?lang=${other}`}>
+        <Link href={langHref}>
           {other === "ky" ? "Кыргызча" : "Русский"}
         </Link>
       </div>

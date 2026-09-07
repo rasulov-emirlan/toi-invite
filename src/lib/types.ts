@@ -169,5 +169,8 @@ export interface PremiumInterestRecord {
   phone: string; // normalized +996XXXXXXXXX
   locale: Locale;
   comment: string | null;
+  /** Which invite to activate once they pay. Null for leads captured off
+   *  `/premium` directly, and for rows predating the column. */
+  invite_slug: string | null;
   created_at: string;
 }
